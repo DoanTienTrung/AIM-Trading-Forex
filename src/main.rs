@@ -31,7 +31,7 @@ use tasks::{
     spawn_rsi_task,
     register_rsi_sort_handler,
     spawn_top10_market_cap_task, spawn_icb_index_filtered_task,
-    spawn_forex_task
+    spawn_forex_task,
 };
 use aim_data::aim::fetch_finance_report_pdf;
 // use crate::tasks::render_pdf_to_png_paths;

@@ -93,9 +93,13 @@ export component AppWindow inherits Window {
     // Forex
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
+    in-out property <string> search_text: "";
+    
 
-    // Callbacks to backend
+    // Callbacks to backend Forex
     callback on_group_selected(string);
+    
+    
 
     // Dữ liệu phân bổ vốn hóa theo ngành (Streamgraph)
     in-out property <[SectorRangeSnapshot]> quantitative_sector_ranges: [];
@@ -383,6 +387,7 @@ export component AppWindow inherits Window {
                 on_group_selected(selected-groups) => {
                     root.on_group_selected(selected-groups);
                 }
+                
 
             }
         }

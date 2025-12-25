@@ -7,3 +7,5 @@ Back-end:
 UI:
 + Kết nối backend:
 
++ Kiểm ra dữ liệu từ API trả UI đã đúng và đủ chưa
+

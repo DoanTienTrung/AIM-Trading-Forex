@@ -48,9 +48,11 @@ component TableBox inherits Rectangle {
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
     in property <bool> is_loading: false;
+    in-out property <string> search_text: ""; 
 
     // Callbacks to backend
     callback on_group_selected(string);
+    callback on_search_changed(string);
 
     VerticalLayout {
         padding: 10px;
@@ -70,8 +72,11 @@ component TableBox inherits Rectangle {
                     width: 100%;
                     height: 100%;
                     mouse-cursor: pointer;
-                    // ✅ Trigger callback
-                    clicked => { root.on_group_selected("USD"); }
+                    // ✅ Cập nhật UI và gọi callback
+                    clicked => {
+                        root.selected_groups = "USD";
+                        root.on_group_selected("USD");
+                    }
                 }
                 Text {
                     text: "USD";
@@ -83,15 +88,18 @@ component TableBox inherits Rectangle {
 
             Rectangle {
                 width: 60px; height: 30px; border-radius: 4px;
-                // ✅ Thêm logic này
+             
                 background: root.selected_groups == "EUR" ? #00b894 : #2f3640;
 
                 TouchArea {
                     width: 100%;
                     height: 100%;
                     mouse-cursor: pointer;
-                    // ✅ Trigger callback
-                    clicked => { root.on_group_selected("EUR"); }
+                   
+                    clicked => {
+                        root.selected_groups = "EUR";
+                        root.on_group_selected("EUR");
+                    }
                 }
                 Text {
                     text: "EUR";
@@ -110,8 +118,11 @@ component TableBox inherits Rectangle {
                     width: 100%;
                     height: 100%;
                     mouse-cursor: pointer;
-                    // ✅ Trigger callback
-                    clicked => { root.on_group_selected("VND"); }
+                    // ✅ Cập nhật UI và gọi callback
+                    clicked => {
+                        root.selected_groups = "VND";
+                        root.on_group_selected("VND");
+                    }
                 }
                 Text {
                     text: "VND";
@@ -130,8 +141,11 @@ component TableBox inherits Rectangle {
                     width: 100%;
                     height: 100%;
                     mouse-cursor: pointer;
-                    // ✅ Trigger callback
-                    clicked => { root.on_group_selected("CNY"); }
+                    // ✅ Cập nhật UI và gọi callback
+                    clicked => {
+                        root.selected_groups = "CNY";
+                        root.on_group_selected("CNY");
+                    }
                 }
                 Text {
                     text: "CNY";
@@ -151,8 +165,11 @@ component TableBox inherits Rectangle {
                     width: 100%;
                     height: 100%;
                     mouse-cursor: pointer;
-                    // ✅ Trigger callback
-                    clicked => { root.on_group_selected("JPY"); }
+                    // ✅ Cập nhật UI và gọi callback
+                    clicked => {
+                        root.selected_groups = "JPY";
+                        root.on_group_selected("JPY");
+                    }
                 }
                 Text {
                     text: "JPY";
@@ -187,6 +204,11 @@ component TableBox inherits Rectangle {
                         color: white; // Màu chữ khi nhập
                         vertical-alignment: center;
                         single-line: true;
+                    
+
+                        edited => {                                       // ← THÊM BLOCK NÀY
+                            root.on_search_changed(self.text);
+                        }
                         
                         // Xử lý Placeholder (vì TextInput không có sẵn placeholder-text)
                         if self.text == "" : Text {
@@ -207,15 +229,16 @@ component TableBox inherits Rectangle {
                 background: #1a1a1a;
                 header_grid := GridLayout {
                     padding-left: 10px; padding-right: 10px; spacing: 10px;
-                    Text { text: "Symbol"; col: 0; width: 80px; color: #888; }
-                    Text { text: "Name"; col: 1; horizontal-stretch: 1; color: #888; }
-                    Text { text: "Last"; col: 2; width: 80px; horizontal-alignment: right; color: #888; }
-                    Text { text: "Change"; col: 3; width: 80px; horizontal-alignment: right; color: #888; }
-                    Text { text: "%Change"; col: 4; width: 70px; horizontal-alignment: right; color: #888; }
-                    Text { text: "Open"; col: 5; width: 80px; horizontal-alignment: right; color: #888; }
-                    Text { text: "High"; col: 6; width: 80px; horizontal-alignment: right; color: #888; }
-                    Text { text: "Low"; col: 7; width: 80px; horizontal-alignment: right; color: #888; }
-                    Text { text: "Time"; col: 8; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "No."; col: 0; width: 20px; color: #888; vertical-alignment: center; }
+                    Text { text: "Symbol"; col: 1; width: 60px; color: #888; vertical-alignment: center;}
+                    Text { text: "Name"; col: 2; width: 85px; color: #888;vertical-alignment: center; }
+                    Text { text: "Last"; col: 3; width: 90px; horizontal-alignment: right; color: #888;vertical-alignment: center; }
+                    Text { text: "Change"; col: 4; width: 90px; horizontal-alignment: right; color: #888; vertical-alignment: center; }
+                    Text { text: "%Change"; col: 5; width: 70px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                    Text { text: "Open"; col: 6; width:90px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                    Text { text: "High"; col: 7; width: 90px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                    Text { text: "Low"; col: 8; width: 90px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                    Text { text: "Time"; col: 9; width: 90px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
                 }
                 Rectangle { height: 1px; background: #13509f; y: parent.height - 1px; }
             }
@@ -225,22 +248,23 @@ component TableBox inherits Rectangle {
                 VerticalLayout {
                     alignment: start;
                     spacing: 0px;
-                    for data in root.forex_list : Rectangle {
+                    for data[index] in root.forex_list : Rectangle {
                         height: 40px;
                         background: #1e1e1e;
                         
                         // Layout dữ liệu khớp chính xác với Header bằng cách dùng cùng thông số width
                         GridLayout {
                             padding-left: 10px; padding-right: 10px; spacing: 10px;
-                            Text { text: data.symbol; col: 0; width: 80px; color: #45aaf2; vertical-alignment: center; }
-                            Text { text: data.name; col: 1; vertical-alignment: center; horizontal-stretch: 1; color: #bdc3c7; overflow: elide; }
-                            Text { text: data.last; col: 2; width: 80px; horizontal-alignment: right; color: white; vertical-alignment: center;}
-                            Text { text: data.change; col: 3; width: 80px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b;vertical-alignment: center; }
-                            Text { text: data.percent_change; col: 4; width: 70px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b; vertical-alignment: center; }
-                            Text { text: data.open; col: 5; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center; }
-                            Text { text: data.high; col: 6; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
-                            Text { text: data.low; col: 7; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
-                            Text { text: data.time; col: 8; width: 80px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                            Text { text: index + 1; col: 0; width: 20px; horizontal-alignment: center; color: #888; vertical-alignment: center; }
+                            Text { text: data.symbol; col: 1; width: 60px; color: #45aaf2; vertical-alignment: center; }
+                            Text { text: data.name; col: 2; vertical-alignment: center; width: 85px; color: #bdc3c7; overflow: elide; }
+                            Text { text: data.last; col: 3; width: 90px; horizontal-alignment: right; color: white; vertical-alignment: center;}
+                            Text { text: data.change; col: 4; width: 90px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b;vertical-alignment: center; }
+                            Text { text: data.percent_change; col: 5; width: 70px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b; vertical-alignment: center; }
+                            Text { text: data.open; col: 6; width: 90px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center; }
+                            Text { text: data.high; col: 7; width: 90px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
+                            Text { text: data.low; col: 8; width: 90px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
+                            Text { text: data.time; col: 9; width: 90px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
                         }
                         Rectangle { height: 1px; background: #2d2d2d; y: parent.height - 1px; }
                     }
@@ -260,23 +284,23 @@ export component Forex inherits Rectangle {
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
     in-out property <bool> is_loading: false;
+    in-out property <string> search_text: "";
 
     // Callbacks to backend
     callback on_group_selected(string);
+    callback on_search_changed(string);
 
     GridLayout {
         padding: 4px;
         spacing: 6px;
 
-        // Cột 1 (Bên trái), Hàng 0: Ô Chart
         ChartBox {
             row: 0;
             col: 0;
-            vertical-stretch: 1; // Tỉ lệ chiều cao
-            horizontal-stretch: 35; // Chiếm khoảng 35-40% chiều ngang
+            vertical-stretch: 1; 
+            horizontal-stretch: 35; 
         }
 
-        // Cột 1 (Bên trái), Hàng 1: Ô Text
         TextBox {
             row: 1;
             col: 0;
@@ -284,17 +308,20 @@ export component Forex inherits Rectangle {
            horizontal-stretch: 35;
         }
 
-        // Cột 2 (Bên phải), Chiếm cả 2 hàng: Ô Table
         TableBox {
             forex_list: root.forex_list;
             selected_groups: root.selected_groups;
+            search_text: root.search_text;
             on_group_selected(group) => {
                 root.on_group_selected(group);
             }
+            on_search_changed(text) => {                    
+                root.on_search_changed(text);
+            }
             row: 0;
             col: 1;
-            rowspan: 2; // Quan trọng: Nhập 2 hàng lại làm một
-            horizontal-stretch: 65; // Chiếm phần lớn chiều ngang (khoảng 60-65%)
+            rowspan: 2; 
+            horizontal-stretch: 65; 
         }
     }
 }

@@ -120,9 +120,11 @@ export component DashBoard inherits Rectangle {
     // Forex
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
+    
 
     // Callbacks to backend
     callback on_group_selected(string);
+    
     
     background: #1a1a1a;
     
@@ -244,9 +246,11 @@ export component DashBoard inherits Rectangle {
                 }
                 // Forex
                 forex_list: root.forex_list;
+                
                 on_group_selected(selected_groups) => {
                     root.on_group_selected(selected_groups);
                 }
+            
 
                 width: 100%;
                 height: 100%;
@@ -288,13 +292,15 @@ export component AppWindow inherits Window {
     callback calculateCorrelation(string);
     callback getReturnMatrix(string, string, string);
     callback sort_rsi14();
-
+    // Forex
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
+    
     
 
     // Callbacks to backend
     callback on_group_selected(string);
+    
     
     DashBoard {
         influence_data <=> root.stock_influence_data;
@@ -339,9 +345,11 @@ export component AppWindow inherits Window {
         }
         // Forex
         forex_list: root.forex_list;
+        
         on_group_selected(selected_groups) => {
             root.on_group_selected(selected_groups);
         }
+        
         
     }
 }

@@ -10,12 +10,15 @@ export component QuantitativeAnalysis inherits Rectangle {
     in property <[CoinData]> coin_list;
     in property <[MaData]> ma_list;
     in-out property <[SectorRangeSnapshot]> sector_ranges;
+    // Forex
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
     
+    
 
-    // Callbacks to backend
+    // Callbacks to backend Forex
     callback on_group_selected(string);
+    
 
     callback on_add_tag(string);
     callback on_remove_tag(int);
@@ -52,7 +55,9 @@ export component QuantitativeAnalysis inherits Rectangle {
         sector_ranges <=> root.sector_ranges;
         // Forex
         forex_list: root.forex_list;
+        
         on_group_selected(selected_groups) => {
             root.on_group_selected(selected_groups);
         }
+        
 }} 

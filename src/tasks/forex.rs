@@ -6,6 +6,7 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+
 // Convert API ForexRecord -> Slint ForexData
 fn convert_to_forex_data(record: &ForexRecord) -> SlintForexData {
     // Format timestamp (i64) -> date string
@@ -38,12 +39,15 @@ pub async fn spawn_forex_task(ui: &AppWindow) -> TaskHandle {
 
     // Shared state for selected group
     let selected_group = Arc::new(Mutex::new("USD".to_string()));
+    let search_text = Arc::new(Mutex::new("".to_string()));
 
     // Register callback handler
     register_forex_group_handler(ui, Arc::clone(&selected_group));
+   
 
     // Clone Arc để move vào async closure
     let selected_group_clone = Arc::clone(&selected_group);
+   
 
     tokio::spawn(async move {
         let mut task_status = TaskStatus::Running;
@@ -71,15 +75,16 @@ pub async fn spawn_forex_task(ui: &AppWindow) -> TaskHandle {
             // Fetch data for selected group
             match fetch_forex_data(&group).await {
                 Ok(response) => {
+                    
                     // Filter by symbol prefix (e.g., ^USD, ^EUR, ^VND)
-                    let prefix = format!("^{}", group.to_uppercase());
+                    let group_filter = format!("forex.rates.{}", group.to_uppercase());
                     let filtered: Vec<&ForexRecord> = response
                         .iter()
-                        .filter(|record| record.symbol.starts_with(&prefix))
+                        .filter(|record| record.group_name == group_filter)
                         .collect();
 
                     log::info!("Fetched {} forex records for group {} (total: {}, prefix: {})",
-                        filtered.len(), group, response.len(), prefix);
+                        filtered.len(), group, response.len(), group_filter);
 
                     let forex_data: Vec<SlintForexData> = filtered
                         .iter()
@@ -122,3 +127,4 @@ pub fn register_forex_group_handler(ui: &AppWindow, selected_group: Arc<Mutex<St
         });
     });
 }
+

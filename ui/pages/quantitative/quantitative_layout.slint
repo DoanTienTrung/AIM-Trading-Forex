@@ -582,10 +582,11 @@ export component QuantitativeLayout inherits Rectangle {
     callback sort_rsi14();
     in-out property <[ForexData]> forex_list: [];
     in-out property <string> selected_groups: "USD";
-    // in property <bool> is_loading: false;
+    
 
     // Callbacks to backend
     callback on_group_selected(string);
+   
 
     
 
@@ -678,6 +679,8 @@ export component QuantitativeLayout inherits Rectangle {
                 Forex {
                     forex_list: root.forex_list;
                     on_group_selected(selected_groups) => {root.on_group_selected(selected-groups);}
+                    
+                    
                     width: 100%;
                     height: 100%;
                 }
