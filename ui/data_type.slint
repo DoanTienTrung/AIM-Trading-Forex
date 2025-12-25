@@ -1,0 +1,248 @@
+export global Utils {
+    public pure function parse_volume(val: int) -> string {
+        if val < 0 {
+            if -val >= 1000000 {
+                "-" + round(-val / 1000000) + "," + padding(round(mod(-val, 1000000) / 1000)) + "," + padding(mod(-val, 1000))
+            } else if -val >= 1000 {
+                "-" + round(-val / 1000) + "," + padding(mod(-val, 1000))
+            } else if -val > 0 {
+                "-" + -val
+            } else {
+                "    "
+            }
+        } else {
+            if val >= 1000000 {
+                round(val / 1000000) + "," + padding(round(mod(val, 1000000) / 1000)) + "," + padding(mod(val, 1000))
+            } else if val >= 1000 {
+                round(val / 1000) + "," + padding(mod(val, 1000))
+            } else if val > 0 {
+                val
+            } else {
+                "    "
+            }
+        }
+    }
+
+    pure function padding(num: int) -> string {
+        if num >= 100 {
+            num
+        } else if num >= 10 {
+           "0" + num
+        } else {
+           "00" + num
+        }
+    }
+}
+
+export enum ShortType {
+    None,
+    HighPrice,
+    LowPrice,
+    Alphabet
+}
+
+export struct OrderList { 
+    time: string,
+    price: float,
+    vol: int,
+    match_type: string
+}
+
+export struct StockData {
+    symbol: string,
+    info: string,
+    price: float,
+    change: float,
+    change-percent: float,
+    volume: float,
+    high: float,
+    low: float,
+    open: float,
+    close: float,
+    ref-price: float,
+    ceil-price: float,
+    floor-price: float,
+    ask-price3: float,
+    ask-volume3: float,
+    ask-price2: float,
+    ask-volume2: float,
+    ask-price1: float,
+    ask-volume1: float,
+    bid-price1: float,
+    bid-volume1: float,
+    bid-price2: float,
+    bid-volume2: float,
+    bid-price3: float,
+    bid-volume3: float,
+    is-changed: int,
+}
+
+export struct StockGroup {
+    group_name: string,
+    stocks: [StockData],
+    is_expanded: bool,
+}
+
+export struct MarketWatchData {
+    symbol: string,
+    info: string,
+    ref-price: float,
+    ceil-price: float,
+    floor-price: float,
+    ask-price3: float,
+    ask-volume3: float,
+    ask-price2: float,
+    ask-volume2: float,
+    ask-price1: float,
+    ask-volume1: float,
+    match-price: float,
+    match-volume: float,
+    change: float,
+    change-percent: float,
+    bid-price1: float,
+    bid-volume1: float,
+    bid-price2: float,
+    bid-volume2: float,
+    bid-price3: float,
+    bid-volume3: float,
+    volume: float,
+    high: float,
+    low: float
+}
+
+export struct IndexData {
+    symbol: string,
+    image: image,
+    number: string,
+    volume: string,
+    price: float,
+    change: float,
+    percentage: float
+}
+
+export struct InfluenceData {
+    symbol: string,
+    value: float,
+}
+
+export struct IndexRow {
+	name: string,
+	score: float,
+	change: float,
+    change_percent: float,
+    advances: int,
+    ceiling: int,
+    nochanges: int,
+    declines: int,
+    floor: int,
+    volume: int,
+}
+
+export struct HeaderData {
+    symbol: string,
+    percent-change: float,
+    price: float,
+    total_val: float,
+    color: color,
+}
+
+export struct HeatMapData {
+    finance_data: [HeaderData],
+    bds_data: [HeaderData],
+    industry_data: [HeaderData],
+    material_data: [HeaderData],
+    basic_goods_data: [HeaderData],
+    advanced_goods_data: [HeaderData],
+    tech_data: [HeaderData],
+    facility_data: [HeaderData],
+    energy_data: [HeaderData],
+}
+
+export struct ICBRow {
+    sector: string,
+    percent: float,
+    gtgd: float,
+    nn_sell: float,
+    nn_buy: float,
+}
+
+export struct AbnormalTradeData {
+    symbol: string,
+    type: string,
+    volume: int,
+    price: float,
+    time: string,
+}
+
+export struct VolumeData {
+    sell_volume: float,
+    buy_volume: float,
+    time: string,
+}
+
+export struct GoodsData {
+    name: string,
+    buy_price: string,
+    sell_price: string
+}
+
+
+// data_type.slint
+export struct StockReport {
+    code: string,
+    name: string,
+    recommend: string,
+    target: string,
+    upside: string,
+    date: string,
+    report_id: string,
+}
+
+export struct StrategyReport {
+    code: string,
+    name: string,
+    status: string,
+    date: string
+}
+
+export struct CorrelationRow {
+    ticker: string,
+    values: [float],
+}
+export struct ReturnRowData {
+    time: string,
+    values: [float],
+}
+export struct RsiData {
+    symbol: string,
+    rsi14: string,
+    price: string,
+    vhtt: string,
+}
+
+export struct CoinData {
+    symbol: string,
+    rsi: float,
+    x: float,
+    y: float,
+}
+
+export struct MaData {
+    symbol: string,
+    rsi: float,       
+    x: float,         
+    y: float,        
+}
+
+export struct ForexData {
+    symbol: string,           // "^USDNZD"
+    name: string,            // "U.S. Dollar/New Zealand Dollar"
+    last: string,            // "1.7126"
+    change: string,          // "-0.013"
+    percent_change: string,  // "-0.75%"
+    open: string,            // "1.7259"
+    high: string,            // "1.7273"
+    low: string,             // "1.7114"
+    time: string,            // "23/12/25"
+    is_up: bool,             // true if price_change > 0
+}

@@ -1,0 +1,390 @@
+// Import Roboto font variants
+import "./font/roboto/Roboto-Bold.ttf";
+import "./font/roboto/Roboto-Regular.ttf";
+import "./font/roboto/Roboto-Italic.ttf";
+import "./font/roboto/Roboto-Medium.ttf";
+
+
+import { ComboBox, Button, VerticalBox, CheckBox, GroupBox } from "std-widgets.slint";
+import { TextEdit } from "std-widgets.slint";
+import { AboutSlint, Palette, Slider, HorizontalBox } from "std-widgets.slint";
+import { LineEdit, StandardButton, ScrollView, TabWidget, ListView } from "std-widgets.slint";
+import { AimChart, UiData, MouseType } from "pages/chart/chart.slint";
+import { ChartIcon } from "widgets/func_icon.slint";
+import { StockCard, AddStockWindow } from "pages/chart/stock_card.slint";
+import { MarketWatch } from "pages/market_watch/market_watch.slint";
+import { ICBRow, IndexData, ShortType, OrderList, StockData, StockGroup, MarketWatchData,
+         AbnormalTradeData, InfluenceData, IndexRow, HeatMapData, VolumeData, GoodsData, StockReport, StrategyReport, CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, ForexData } from "data_type.slint";
+import { ChartPage } from "pages/chart/chart_page.slint";
+import { selectPage } from "page_selection.slint";
+import { FinanceList } from "pages/chart/finance_type.slint";
+import { SharedHolder, Subsidiary, Officer, InsiderTransaction } from "pages/chart/finance_type.slint";
+import { AimLogo } from "widgets/demo_orbiter.slint";
+import { DashBoard } from "pages/dashboard/dashboard.slint";
+import { FinanceReport } from "pages/chart/finance_report.slint";
+import { SectorRangeSnapshot } from "pages/quantitative/quantitative_price_trade_heatmap.slint";
+
+export component AppWindow inherits Window {
+    title: @tr("AIM TRADING PRO v1.0.0");
+    background: #050505;
+    default-font-family: "Roboto";
+    default-font-size: 12px;
+    preferred-width: 800px;
+    preferred-height: 600px;
+    icon: @image-url("./image/aim-logo.png");
+
+    in-out property <UiData> previous_ui_data;
+    in-out property <UiData> ui_data: {
+        is_release: true,
+        is_in_object: true,
+        color: #ff0000,
+    };
+    in-out property <int> prev-page: -1;
+    in-out property <int> active-page: 0;
+    in-out property <bool> is_chart_in_update: false;
+    in-out property <bool> is_list_in_update: false;
+    in-out property <StockData> current_stock: {
+        symbol: "AAA"
+    };
+    in-out property <image> candle_stick_image;
+    in property <[IndexData]> index_data: [{symbol: "VNINDEX", image: @image-url(""), number: "1,657.75", volume: "34,172,944 TỶ", price: 1657.75, change: 0.0, percentage: 0.0},
+                                           {symbol: "VN30", image: @image-url(""), number: "1,855.08", volume: "17,602,451 TỶ", price: 1855.08, change: 0.0, percentage: 0.0},
+                                           {symbol: "HNX30", image: @image-url(""), number: "598.31", volume: "1,877,414 TỶ", price: 598.31, change: 0.0, percentage: 0.0},
+                                           {symbol: "HNXINDEX", image: @image-url(""), number: "274.18", volume: "6,844,735 TỶ", price: 274.18, change: 0.0, percentage: 0.0}];
+    in property <[MarketWatchData]> market_watch_data;
+    in property <[StockGroup]> stock_groups;
+    in property <[OrderList]> order_list;
+    
+    // Market watch sorting properties
+    in-out property <int> market_watch_sort_column: -1;
+    in-out property <bool> market_watch_sort_ascending: true;
+    in-out property <bool> market_watch_show_percentage: false;
+    
+    in-out property <FinanceList> balance_sheet;
+    in-out property <FinanceList> overview_data;
+    in-out property <FinanceList> income_statement;
+    in-out property <FinanceList> cash_flow_tt_statement;
+    in-out property <FinanceList> cash_flow_gt_statement;
+    in-out property <[SharedHolder]> shared_holders;
+    in-out property <[Subsidiary]> subsidiaries;
+    in-out property <[Officer]> officers;
+    in-out property <[InsiderTransaction]> insider_transactions;
+    in-out property <string> company_overview: "";
+    in-out property <[InfluenceData]> stock_influence_data: [];
+    in-out property <[IndexRow]> overall_index_data: [];
+    in-out property <HeatMapData> heatmap_data;
+    in-out property <[ICBRow]> icb_index_data: [];
+    in-out property <[VolumeData]> td_data;
+    in-out property <[VolumeData]> nn_data;
+    in property <[GoodsData]> good_data;
+    in property <[AbnormalTradeData]> abnormal_trade_data;
+    out property <ShortType> sort_type: ShortType.None;
+
+    in property <[StockReport]> report_list;
+    in property <[StrategyReport]> strategy_list;
+    in property <[image]> pdf_pages;
+    in-out property <string> selected_report_id: "";
+    in property <bool> is_loading: false;
+
+    // MP layout
+    in property <[RsiData]> rsi_list;
+    in property <[CoinData]> coin_list;
+    in property <[MaData]> ma_list;
+    // Forex
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+
+    // Dữ liệu phân bổ vốn hóa theo ngành (Streamgraph)
+    in-out property <[SectorRangeSnapshot]> quantitative_sector_ranges: [];
+
+    callback add_stock(string, string);
+    callback remove_stock(string, string);
+    callback toggle_group(int);
+    callback switch_list(string);
+    callback sort_stocks(ShortType);
+    callback sort_market_watch(int);
+    public function get_chart_width() -> length {
+        return chart_page.get_chart_width();
+    }
+    public function get_chart_height() -> length {
+        return chart_page.get_chart_height();
+    }
+    callback report_selected(string);
+    //quantitative analysis
+    in-out property <[string]> stock_tags: [];
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    //correlation matrix
+    in property <[CorrelationRow]> correlation_rows: [];
+    in property <[string]> correlation_columns: [];
+    callback calculateCorrelation(string);
+    //return matrix data
+    in property <[ReturnRowData]> return_row_data: [];
+    callback getReturnMatrix(string, string, string);
+    callback sort_rsi14();
+    HorizontalLayout {
+        Rectangle {
+            background: #19191C;
+            VerticalBox {
+                AimLogo {
+                    height: 64px;
+                }
+                // Rectangle {
+                //     height: 64px;
+                // }
+                home_selection := selectPage {
+                    image: @image-url("./image/eye.svg");
+                    is_selected: true;
+                    selected => {
+                        active-page = 0;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                chart_selection := selectPage {
+                    image: @image-url("./image/research.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 2;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                world_selection := selectPage {
+                    image: @image-url("./image/stock-board.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 1;
+                        home_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                wallet_selection := selectPage {
+                    image: @image-url("./image/world.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 3;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                crypto_selection := selectPage {
+                    image: @image-url("./image/crypto.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 4;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                macro_data_selection := selectPage {
+                    image: @image-url("./image/macro-data.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 5;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                alpha_lab_selection := selectPage {
+                    image: @image-url("./image/lab.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 6;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                calculator_selection := selectPage {
+                    image: @image-url("./image/calculator.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 7;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        chat_selection.is_selected = false;
+                    }
+                }
+                chat_selection := selectPage {
+                    image: @image-url("./image/chat.svg");
+                    is_selected: false;
+                    selected => {
+                        active-page = 8;
+                        home_selection.is_selected = false;
+                        world_selection.is_selected = false;
+                        chart_selection.is_selected = false;
+                        wallet_selection.is_selected = false;
+                        crypto_selection.is_selected = false;
+                        macro_data_selection.is_selected = false;
+                        alpha_lab_selection.is_selected = false;
+                        calculator_selection.is_selected = false;
+                    }
+                }
+                Rectangle {}
+            }
+        }
+        Rectangle {
+            width: 5px;
+        }
+        Rectangle {
+            padding: 8px;
+            chart_page := ChartPage {
+                visible: root.active-page == 3 || root.active-page == 2 
+                      || root.active-page == 4 || root.active-page == 5;
+                stock_groups <=> stock_groups;
+                order_list <=> order_list;
+                current_stock <=> current_stock;
+                is_list_in_update <=> is_list_in_update;
+                is_chart_in_update <=> root.is_chart_in_update;
+                image: root.candle_stick_image;
+                income_statement: root.income_statement;
+                balance_sheet: root.balance_sheet;
+                overview_data: root.overview_data;
+                cash_flow_tt_statement: root.cash_flow_tt_statement;
+                cash_flow_gt_statement: root.cash_flow_gt_statement;
+                shared_holders <=> root.shared_holders;
+                subsidiaries <=> root.subsidiaries;
+                officers <=> root.officers;
+                insider_transactions <=> root.insider_transactions;
+                company_overview <=> root.company_overview;
+                ui_data <=> root.ui_data;
+
+                add_stock(group_name, stock_name) => {
+                    root.add_stock(group_name, stock_name)
+                }
+                remove_stock(group_name, stock_name) => {
+                    root.remove_stock(group_name, stock_name)
+                }
+                toggle_group(group_idx) => {
+                    root.toggle_group(group_idx)
+                }
+                switch_list(list_name) => {
+                    root.switch_list(list_name)
+                }
+                sort_stocks(type) => {
+                    root.sort_type = type;
+                    root.sort_stocks(type);
+                }
+                
+            }
+            MarketWatch {
+                index_data <=> root.index_data;
+                visible: root.active-page == 1;
+                data: market_watch_data;
+                index_row <=> root.overall_index_data;
+                sort_column: root.market_watch_sort_column;
+                sort_ascending: root.market_watch_sort_ascending;
+                show_percentage <=> root.market_watch_show_percentage;
+                sort_data(column) => {
+                    if (root.market_watch_sort_column == column) {
+                        root.market_watch_sort_ascending = !root.market_watch_sort_ascending;
+                    } else {
+                        root.market_watch_sort_column = column;
+                        root.market_watch_sort_ascending = true;
+                    }
+                    root.sort_market_watch(column);
+                }
+            }
+            DashBoard {
+                visible: root.active-page == 0;
+                influence_data <=> root.stock_influence_data;
+                index_data <=> root.overall_index_data;
+                heatmap_data <=> root.heatmap_data;
+                icb_index_data <=> root.icb_index_data;
+                abnormal_trade_data <=> root.abnormal_trade_data;
+                td_data <=> root.td_data;
+                nn_data <=> root.nn_data;
+                good_data <=> root.good_data;
+
+                
+                report_list <=> root.report_list;
+                strategy_list <=> root.strategy_list;
+                pdf_pages <=> root.pdf_pages;
+                is_loading <=> root.is_loading;
+                // MP layout
+                rsi_list: root.rsi_list;
+                coin_list: root.coin_list;
+                ma_list: root.ma_list;
+                sort_rsi14 => {root.sort_rsi14();}
+
+                report_selected(report_id) => {
+                    root.report_selected(report_id)}
+                //quantitative analysis
+                on_add_tag(tag) => {
+                    root.on_add_tag(tag);
+                }
+                on_remove_tag(index) => {
+                    root.on_remove_tag(index);
+                }
+                calculateCorrelation(type) => {
+                    root.calculateCorrelation(type);
+                }
+                selected_tags <=> root.stock_tags;
+                correlation_rows <=> root.correlation_rows;
+                correlation_columns <=> root.correlation_columns;
+                return_row_data <=> root.return_row_data;
+                getReturnMatrix(period, group, month) => {
+                    root.getReturnMatrix(period, group, month);
+                }
+                sector_ranges <=> root.quantitative_sector_ranges;
+
+                // forex
+                forex_list: root.forex_list;
+                on_group_selected(selected-groups) => {
+                    root.on_group_selected(selected-groups);
+                }
+
+            }
+        }
+    }
+}

@@ -1,0 +1,1124 @@
+import { Palette } from "std-widgets.slint";
+
+struct Palette  {
+    menuBar : brush,
+    mainContent : brush,
+    box : brush,
+    lightDisplay : brush,
+    pieChart : brush,
+    roundButton : brush,
+    weekdayBox : brush,
+    text : brush,
+    shadow : brush,
+}
+export component ChartExample inherits Rectangle {
+    width: 400px;
+    height: 240px;
+    background: #f6f6f6;
+
+    // 🧮 Dữ liệu: 7 ngày
+    property <[{
+        day: string,
+        a: float,
+        b: float,
+        c: float,
+    }]> data: [
+        { day: "D1", a: 30, b: 40, c: 30 },
+        { day: "D2", a: 25, b: 50, c: 25 },
+        { day: "D3", a: 20, b: 60, c: 20 },
+        { day: "D4", a: 40, b: 30, c: 30 },
+        { day: "D5", a: 35, b: 45, c: 20 },
+        { day: "D6", a: 30, b: 50, c: 20 },
+        { day: "D7", a: 25, b: 55, c: 20 },
+    ];
+
+    // Chiều rộng mỗi cột
+    property <length> bar-width: 30px;
+    property <length> spacing: 10px;
+
+    // Vùng chart
+    Rectangle {
+        x: 20px; y: 20px;
+        width: parent.width - 40px;
+        height: parent.height - 40px;
+        background: #ffffff;
+        border-radius: 6px;
+
+        // Vẽ từng cột (stacked bar)
+        for item[index] in root.data: Rectangle {
+            // Tính vị trí X theo thứ tự ngày
+            x: (root.bar-width + root.spacing) * index + 10px;
+            width: root.bar-width;
+            height: parent.height - 40px;
+            y: 20px;
+
+            // A: phần dưới cùng
+            Rectangle {
+                y: parent.height - (parent.height * (item.a / 100));
+                height: parent.height * (item.a / 100);
+                width: parent.width;
+                background: #ff6b6b;
+                // border-radius: 3px;
+            }
+
+            // B: nằm trên A
+            Rectangle {
+                y: parent.height - (parent.height * ((item.a + item.b) / 100));
+                height: parent.height * (item.b / 100);
+                width: parent.width;
+                background: #4dabf7;
+                // border-radius: 3px;
+            }
+
+            // C: trên cùng
+            Rectangle {
+                y: parent.height - (parent.height * ((item.a + item.b + item.c) / 100));
+                height: parent.height * (item.c / 100);
+                width: parent.width;
+                background: #69db7c;
+                // border-radius: 3px;
+            }
+
+            // Nhãn ngày
+            Text {
+                text: item.day;
+                y: parent.height + 4px;
+                x: (root.bar-width - self.width) / 2;
+                font-size: 10px;
+                color: #444;
+            }
+        }
+    }
+}
+
+global Skin  {
+    in property <bool> day: Palette.color-scheme != ColorScheme.dark;
+    out property <Palette> palette : root.day ? {
+       menuBar : #6D7BFB,
+       mainContent :  #fbfbfb,
+       box :   #ffffff,
+       lightDisplay : #ffffff,
+       pieChart : #ffffff,
+       roundButton : #f7f7f7,
+       weekdayBox : #f4f4f4,
+       text : #000,
+       shadow : #0001, // ### added alpha
+    } : {
+       menuBar : #2937A7,
+       mainContent : #040404,
+       box : #000000,
+       lightDisplay : #000000,
+       pieChart : #000000,
+       roundButton : #0a0a0a,
+       weekdayBox : #0c0c0c,
+       text : #fff,
+       shadow : #fff1, // ### added alpha
+    };
+
+    // From Skin::initHints in Skin.cpp
+    out property <length> DefaultFont: 12px;
+    out property <length> TinyFont: 9px;
+    out property <length> SmallFont: 10px;
+    out property <length> MediumFont: 13px;
+    out property <length> LargeFont: 20px;
+    out property <length> HugeFont: 27px; // (also, bold)
+    out property <length> TitleFont: 10px; // (also, bold)
+}
+component BoxBase inherits Rectangle {
+    background: Skin.palette.box;
+    drop-shadow-offset-x: 6px;
+    drop-shadow-offset-y: 6px;
+    drop-shadow-blur: 6px;
+    drop-shadow-color: Skin.palette.shadow;
+}
+component Box inherits BoxBase {
+    in property <string> title;
+
+    VerticalLayout {
+        if (root.title != "") : Text {
+            text <=> root.title;
+            font-size: Skin.TitleFont;
+            font-weight: 700;
+        }
+        spacing: 10px;
+        padding: 15px;
+
+        @children
+    }
+}
+export component UsageDiagram inherits Box {
+    // WeekDayBox
+    boxes := HorizontalLayout {
+        padding: 0px;
+        padding-bottom: 6px;
+        spacing: 6px;
+
+        for _ in 7 : Rectangle {
+            background: Skin.palette.box;
+            drop-shadow-offset-x: 6px;
+            drop-shadow-offset-y: 6px;
+            drop-shadow-blur: 6px;
+            drop-shadow-color: Skin.palette.weekdayBox;
+            min-height: 50px;
+        }
+
+    }
+
+    Rectangle {
+        // ### This is somehow a hack to have another rectangle on top of the boxes
+        height: 0;
+
+        VerticalLayout {
+            x:0;
+            y: -boxes.height;
+            height: boxes.height;
+            width: boxes.width;
+            padding: 0px;
+            spacing: 0px;
+
+            HorizontalLayout {
+                alignment: end;
+                spacing: 10px;
+                // CaptionItem
+                for caption in [
+                    { text: "Water", color: #6776ff, },
+                    { text: "Electricity", color: #ff3122, },
+                    { text: "Gas", color: #ff7d34, },
+                ] : HorizontalLayout {
+                    spacing: 10px;
+                    padding-top: 10px;
+                    padding-right: 20px;
+
+                    VerticalLayout {
+                        padding: 0px;
+                        alignment: center;
+
+                        Rectangle {
+                            height: 8px;
+                            width: 9px;
+                            border-radius: 4px;
+                            background: caption.color;
+                        }
+                    }
+
+                    Text {
+                        text: caption.text;
+                        horizontal-alignment: center;
+                        font-size: Skin.TinyFont;
+                    }
+                }
+            }
+
+            Rectangle {
+                // The datapoint is
+                // FIXME: make it more curve, also fix the color
+                for datapoints in [
+                    {
+                        values: { a: 40, b: 55, c: 60, d: 50, e: 40, f:50, g: 75, h: 80, i: 50, j: 40 },
+                        color: #6776ff
+                    }, {
+                        values: { a: 30, b: 15, c: 30, d: 40, e: 60, f: 10, g: 10, h: 20, i: 40, j: 45 },
+                        color: #ff3122
+                    } , {
+                        values: { a: 30, b: 30, c: 10, d: 10, e: 0, f: 40, g: 15, h: 0, i: 10, j: 15 },
+                        color: #1de66a,
+                    }
+                ] : Path {
+                    opacity: 0.7;
+                    fill: @linear-gradient(180deg, datapoints.color, transparent 100%);
+                    viewbox-width: self.width/1px;
+                    viewbox-height: self.height/1px;
+
+                    MoveTo {
+                        x: 0;
+                        y: parent.viewbox-height;
+                    }
+
+                    LineTo {
+                        x: 0;
+                        y: parent.viewbox-height - datapoints.values.a / 100 * parent.viewbox-height;
+                    }
+
+                    QuadraticTo {
+                        x: 0.5/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.b / 100 * parent.viewbox-height;
+                        control-x: 0/7 * parent.viewbox-width;
+                        control-y: parent.viewbox-height - datapoints.values.b / 100 * parent.viewbox-height;
+                    }
+
+                    CubicTo {
+                        x: 1.5/7 * parent.viewbox-width;
+                        control-1-x: 1/7 * parent.viewbox-width;
+                        control-2-x: 1/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.c / 100 * parent.viewbox-height;
+                        control-1-y: parent.viewbox-height - datapoints.values.b / 100 * parent.viewbox-height;
+                        control-2-y: parent.viewbox-height - datapoints.values.c / 100 * parent.viewbox-height;
+                    }
+
+                    CubicTo {
+                        x: 3.5/7 * parent.viewbox-width;
+                        control-1-x: 3/7 * parent.viewbox-width;
+                        control-2-x: 3/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.e / 100 * parent.viewbox-height;
+                        control-1-y: parent.viewbox-height - datapoints.values.d / 100 * parent.viewbox-height;
+                        control-2-y: parent.viewbox-height - datapoints.values.e / 100 * parent.viewbox-height;
+                    }
+
+                    CubicTo {
+                        x: 4.5/7 * parent.viewbox-width;
+                        control-1-x: 4/7 * parent.viewbox-width;
+                        control-2-x: 4/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.f / 100 * parent.viewbox-height;
+                        control-1-y: parent.viewbox-height - datapoints.values.e / 100 * parent.viewbox-height;
+                        control-2-y: parent.viewbox-height - datapoints.values.f / 100 * parent.viewbox-height;
+                    }
+
+                    CubicTo {
+                        x: 5.5/7 * parent.viewbox-width;
+                        control-1-x: 5/7 * parent.viewbox-width;
+                        control-2-x: 5/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.g / 100 * parent.viewbox-height;
+                        control-1-y: parent.viewbox-height - datapoints.values.f / 100 * parent.viewbox-height;
+                        control-2-y: parent.viewbox-height - datapoints.values.g / 100 * parent.viewbox-height;
+                    }
+
+                    CubicTo {
+                        x: 6.5/7 * parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.h / 100 * parent.viewbox-height;
+                        control-1-x: 6/7 * parent.viewbox-width;
+                        control-1-y: parent.viewbox-height - datapoints.values.g / 100 * parent.viewbox-height;
+                        control-2-x: 6/7 * parent.viewbox-width;
+                        control-2-y: parent.viewbox-height - datapoints.values.h / 100 * parent.viewbox-height;
+                    }
+
+                    QuadraticTo {
+                        x: parent.viewbox-width;
+                        y: parent.viewbox-height - datapoints.values.i / 100 * parent.viewbox-height;
+                        control-x: 7/7 * parent.viewbox-width;
+                        control-y: parent.viewbox-height - datapoints.values.h / 100 * parent.viewbox-height;
+                    }
+
+                    LineTo {
+                        x: parent.viewbox-width;
+                        y: parent.viewbox-height;
+                    }
+
+                    LineTo {
+                        x: 0;
+                        y: parent.viewbox-height;
+                    }
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        padding: 0px;
+        padding-top: 5px;
+        // WeekDay
+        for day in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : Text {
+            //background: blue;
+            color: Skin.palette.text;
+            text: day;
+            font-size: Skin.TinyFont;
+            horizontal-alignment: center;
+        }
+
+    }
+}
+
+export component StackedAreaChart inherits Rectangle {
+    width: 400px;
+    height: 250px;
+    background: #f5f5f5;
+
+    property <[{ a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }]> raw_values: [
+        { a: 30, b: 30, c: 10, d: 10, e: 0, f: 40, g: 15, h: 0, i: 10, j: 15 },   // xanh lá (bottom)
+        { a: 30, b: 15, c: 30, d: 40, e: 60, f: 10, g: 10, h: 20, i: 40, j: 45 }, // đỏ (middle)
+        { a: 40, b: 55, c: 60, d: 50, e: 40, f: 50, g: 75, h: 80, i: 50, j: 40 }  // xanh dương (top)
+    ];
+
+    property <[color]> colors: [#1de66a, #ff3122, #6776ff];
+
+    for values[index] in raw_values : Path {
+        
+        fill: @linear-gradient(180deg, colors[index].with-alpha(200), transparent 0%);
+
+        opacity: 0.9;
+
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+
+        // --- Tính vị trí y tương đối (stacked)
+        function get_value(values: { a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }, key: string) -> float {
+            if (key == "a") { return values.a; }
+            if (key == "b") { return values.b; }
+            if (key == "c") { return values.c; }
+            if (key == "d") { return values.d; }
+            if (key == "e") { return values.e; }
+            if (key == "f") { return values.f; }
+            if (key == "g") { return values.g; }
+            if (key == "h") { return values.h; }
+            if (key == "i") { return values.i; }
+            if (key == "j") { return values.j; }
+            return 0;
+        }
+
+        function stacked_y(i: int, key: string) -> float {
+            if (i == 0) {
+                return get_value(raw_values[0], key);
+            } else if (i == 1) {
+                return get_value(raw_values[0], key) + get_value(raw_values[1], key);
+            } else if (i == 2) {
+                return get_value(raw_values[0], key) + get_value(raw_values[1], key) + get_value(raw_values[2], key);
+            } else {
+                return 0;
+            }
+        }
+
+        MoveTo {
+            x: 0;
+            y: parent.viewbox-height - stacked_y(index, "a") / 100 * parent.viewbox-height;
+        }
+
+        LineTo {
+            x: 0 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][0]) / 100 * parent.viewbox-height;
+        }
+
+        LineTo {
+            x: 1 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][1]) / 100 * parent.viewbox-height;
+        }
+
+        LineTo {
+            x: 2 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][2]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 3 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][3]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 4 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][4]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 5 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][5]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 6 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][6]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 7 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][7]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 7 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][7]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 8 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][8]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 9 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][9]) / 100 * parent.viewbox-height;
+        }
+
+        LineTo {
+            x: 9 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][9]) / 100 * parent.viewbox-height;
+        }
+
+        LineTo {
+            x: 8 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][8]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 7 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][7]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 6 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][6]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 5 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][5]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 4 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][4]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 3 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][3]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 2 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][2]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 1 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][1]) / 100 * parent.viewbox-height;
+        }
+        LineTo {
+            x: 0 / 9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][0]) / 100 * parent.viewbox-height;
+        }
+        
+        Close {}
+        // for n in [1,2,3,4,5,6,7,8,9] : LineTo {
+        //     x: n / 9 * parent.viewbox-width;
+        //     y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][n]) / 100 * parent.viewbox-height;
+        // }
+
+        // // --- Kéo xuống theo lớp dưới
+        // for n in [9,8,7,6,5,4,3,2,1,0] : LineTo {
+        //     x: n / 9 * parent.viewbox-width;
+        //     y: parent.viewbox-height - stacked_y(index, ["a","b","c","d","e","f","g","h","i","j"][n]) / 100 * parent.viewbox-height;
+        // }
+
+    }
+}
+
+export component StackedAreaChart_ inherits Rectangle {
+    width: 400px;
+    height: 250px;
+    background: #f5f5f5;
+
+    property <[{ a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }]> raw_values: [
+        { a: 30, b: 30, c: 10, d: 10, e: 10, f: 40, g: 15, h: 10, i: 10, j: 15 },
+        { a: 30, b: 15, c: 30, d: 40, e: 50, f: 10, g: 10, h: 20, i: 40, j: 45 },
+        { a: 40, b: 55, c: 60, d: 50, e: 40, f: 50, g: 75, h: 70, i: 50, j: 40 }
+    ];
+
+    property <[color]> colors: [#1d2ae6, #ff3122, #20ff02];
+
+    for values[index] in raw_values : Path {
+        // fill: @linear-gradient(0deg, colors[index], transparent);
+        fill: @linear-gradient(0deg, colors[index],  colors[index]);
+        opacity: 0.9;
+
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+
+        function get_value(values: { a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }, key: string) -> float {
+            if (key == "a") { return values.a; }
+            if (key == "b") { return values.b; }
+            if (key == "c") { return values.c; }
+            if (key == "d") { return values.d; }
+            if (key == "e") { return values.e; }
+            if (key == "f") { return values.f; }
+            if (key == "g") { return values.g; }
+            if (key == "h") { return values.h; }
+            if (key == "i") { return values.i; }
+            if (key == "j") { return values.j; }
+            return 0;
+        }
+
+        function stacked_y(i: int, key: string) -> float {
+            if (i == 0) { return get_value(raw_values[0], key) + get_value(raw_values[1], key) + + get_value(raw_values[2], key); }
+            if (i == 1) { return get_value(raw_values[0], key) + + get_value(raw_values[1], key); }
+            if (i == 2) { return 0+get_value(raw_values[0], key);}
+            return 0;
+        }
+
+        MoveTo { x: 0; y: parent.viewbox-height - stacked_y(index, "a") / 100 * parent.viewbox-height; }
+        LineTo { x: 1/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "b") / 100 * parent.viewbox-height; }
+        LineTo { x: 2/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "c") / 100 * parent.viewbox-height; }
+        LineTo { x: 3/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "d") / 100 * parent.viewbox-height; }
+        LineTo { x: 4/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "e") / 100 * parent.viewbox-height; }
+        LineTo { x: 5/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "f") / 100 * parent.viewbox-height; }
+        LineTo { x: 6/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "g") / 100 * parent.viewbox-height; }
+        LineTo { x: 7/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "h") / 100 * parent.viewbox-height; }
+        LineTo { x: 8/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "i") / 100 * parent.viewbox-height; }
+        LineTo { x: 9/9 * parent.viewbox-width; y: parent.viewbox-height - stacked_y(index, "j") / 100 * parent.viewbox-height; }
+        // Kéo xuống đáy để khép vùng
+        LineTo { x: 9/9 * parent.viewbox-width; y: parent.viewbox-height; }
+        LineTo { x: 0; y: parent.viewbox-height; }
+        Close {}
+    }
+}
+
+export component StackedSmoothAreaChart inherits Rectangle {
+    width: 400px;
+    height: 250px;
+    background: #f5f5f5;
+
+    property <[{ a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }]> raw_values: [
+        { a: 30, b: 30, c: 10, d: 20, e: 10, f: 40, g: 15, h: 10, i: 10, j: 15 },
+        { a: 30, b: 15, c: 30, d: 30, e: 50, f: 10, g: 10, h: 20, i: 40, j: 45 },
+        { a: 40, b: 55, c: 60, d: 50, e: 40, f: 50, g: 75, h: 70, i: 50, j: 40 }
+    ];
+
+    property <[color]> colors: [#1d2ae6, #ff3122, #20ff02];
+
+    for values[index] in raw_values : Path {
+        fill: @linear-gradient(0deg, colors[index], colors[index]);
+        opacity: 0.9;
+
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+
+        function get_value(values: { a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }, key: string) -> float {
+            if (key == "a") { return values.a; }
+            if (key == "b") { return values.b; }
+            if (key == "c") { return values.c; }
+            if (key == "d") { return values.d; }
+            if (key == "e") { return values.e; }
+            if (key == "f") { return values.f; }
+            if (key == "g") { return values.g; }
+            if (key == "h") { return values.h; }
+            if (key == "i") { return values.i; }
+            if (key == "j") { return values.j; }
+            return 0;
+        }
+
+        function stacked_y(i: int, key: string) -> float {
+            if (i == 0) { return get_value(raw_values[0], key) + get_value(raw_values[1], key) + get_value(raw_values[2], key); }
+            if (i == 1) { return get_value(raw_values[0], key) + get_value(raw_values[1], key); }
+            if (i == 2) { return get_value(raw_values[0], key); }
+            return 0;
+        }
+
+        // Danh sách keys để vẽ đường cong
+        property <[string]> keys: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+
+        MoveTo { 
+            x: 0;
+            y: parent.viewbox-height - stacked_y(index, "a") / 100 * parent.viewbox-height;
+        }
+
+        // --- Đường cong mượt ---
+        CubicTo {
+            control-1-x: 0.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[0]) / 100 * parent.viewbox-height;
+            control-2-x: 0.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[1]) / 100 * parent.viewbox-height;
+            x: 1/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[1]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 1.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[1]) / 100 * parent.viewbox-height;
+            control-2-x: 1.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[2]) / 100 * parent.viewbox-height;
+            x: 2/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[2]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 2.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[2]) / 100 * parent.viewbox-height;
+            control-2-x: 2.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[3]) / 100 * parent.viewbox-height;
+            x: 3/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[3]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 3.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[3]) / 100 * parent.viewbox-height;
+            control-2-x: 3.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[4]) / 100 * parent.viewbox-height;
+            x: 4/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[4]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 4.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[4]) / 100 * parent.viewbox-height;
+            control-2-x: 4.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[5]) / 100 * parent.viewbox-height;
+            x: 5/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[5]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 5.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[5]) / 100 * parent.viewbox-height;
+            control-2-x: 5.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[6]) / 100 * parent.viewbox-height;
+            x: 6/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[6]) / 100 * parent.viewbox-height;
+        }
+
+        CubicTo {
+            control-1-x: 6.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[6]) / 100 * parent.viewbox-height;
+            control-2-x: 6.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[7]) / 100 * parent.viewbox-height;
+            x: 7/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[7]) / 100 * parent.viewbox-height;
+        }
+        CubicTo {
+            control-1-x: 7.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[7]) / 100 * parent.viewbox-height;
+            control-2-x: 7.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[8]) / 100 * parent.viewbox-height;
+            x: 8/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[8]) / 100 * parent.viewbox-height;
+        }
+        CubicTo {
+            control-1-x: 8.5/9 * parent.viewbox-width;
+            control-1-y: parent.viewbox-height - stacked_y(index, keys[8]) / 100 * parent.viewbox-height;
+            control-2-x: 8.5/9 * parent.viewbox-width;
+            control-2-y: parent.viewbox-height - stacked_y(index, keys[9]) / 100 * parent.viewbox-height;
+            x: 9/9 * parent.viewbox-width;
+            y: parent.viewbox-height - stacked_y(index, keys[9]) / 100 * parent.viewbox-height;
+        }
+
+        // --- Đóng vùng ---
+        LineTo { x: 9/9 * parent.viewbox-width; y: parent.viewbox-height; }
+        LineTo { x: 0; y: parent.viewbox-height; }
+        Close {}
+    }
+
+}
+
+export component StackedSmoothAreaChart_ inherits Rectangle {
+    width: 400px;
+    height: 250px;
+    background: #f5f5f5;
+
+    property <[{ a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }]> raw_values: [
+        { a: 30, b: 30, c: 10, d: 20, e: 10, f: 40, g: 15, h: 10, i: 10, j: 15 },
+        { a: 30, b: 15, c: 30, d: 30, e: 50, f: 10, g: 10, h: 20, i: 40, j: 45 },
+        { a: 40, b: 55, c: 60, d: 50, e: 40, f: 50, g: 75, h: 70, i: 50, j: 40 }
+    ];
+
+    property <[color]> colors: [#1d2ae6, #ff3122, #20ff02];
+    property <[string]> keys: ["a","b","c","d","e","f","g","h","i","j"];
+
+    function get_value(values: { a: float, b: float, c: float, d: float, e: float, f: float, g: float, h: float, i: float, j: float }, key: string) -> float {
+            if (key == "a") { return values.a; }
+            if (key == "b") { return values.b; }
+            if (key == "c") { return values.c; }
+            if (key == "d") { return values.d; }
+            if (key == "e") { return values.e; }
+            if (key == "f") { return values.f; }
+            if (key == "g") { return values.g; }
+            if (key == "h") { return values.h; }
+            if (key == "i") { return values.i; }
+            if (key == "j") { return values.j; }
+            return 0;
+        }
+
+    function stacked_y(i: int, key: string) -> float {
+            if (i == 0) { return get_value(raw_values[0], key) + get_value(raw_values[1], key) + get_value(raw_values[2], key); }
+            if (i == 1) { return get_value(raw_values[0], key) + get_value(raw_values[1], key); }
+            if (i == 2) { return get_value(raw_values[0], key); }
+            return 0;
+        }
+
+    // property <string> path;
+    // property <int>  k;
+    pure function path_data(i: int, h: float, w: float) -> string {
+        // let w = self.width;
+        // let h = self.height;
+        let keys = self.keys;
+        let denom = keys.length - 1;
+
+        // Tạo chuỗi path step-by-step không gán lại
+        return
+            "M 0 " + ((h - stacked_y(i, "a") / 100 * h))
+            + make_curve(i, "a", "b", 1, w, h, denom)
+            + make_curve(i, "b", "c", 2, w, h, denom)
+            + make_curve(i, "c", "d", 3, w, h, denom)
+            + make_curve(i, "d", "e", 4, w, h, denom)
+            + make_curve(i, "e", "f", 5, w, h, denom)
+            + make_curve(i, "f", "g", 6, w, h, denom)
+            + make_curve(i, "g", "h", 7, w, h, denom)
+            + make_curve(i, "h", "i", 8, w, h, denom)
+            + make_curve(i, "i", "j", 9, w, h, denom)
+            + " L " + w + " " + h + " L 0 " + h + " Z";
+    }
+
+
+    pure function make_curve(
+        i: int,
+        key_prev: string,
+        key_next: string,
+        k: int,
+        w: float,
+        h: float,
+        denom: float
+    ) -> string {
+        let x0 = (k - 0.5) / denom * w;
+        let x = k / denom * w;
+        let y0 = h - stacked_y(i, key_prev) / 100 * h;
+        let y = h - stacked_y(i, key_next) / 100 * h;
+        return " C " + x0 + " " + y0 + ", " + x0 + " " + y + ", " + x + " " + y;
+    }
+
+
+    for values[index] in raw_values : Path {
+        fill: @linear-gradient(0deg, colors[index], colors[index]);
+        opacity: 0.9;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+        commands: parent.path_data(index, self.viewbox-height, self.viewbox-width);
+    }
+}
+
+
+export component StackedSmoothAreaChart_30d inherits Rectangle {
+    width: 1000px;
+    height: 250px;
+    background: #f5f5f5;
+
+    // 🧮 Dữ liệu 30 ngày (mỗi "raw_values" là một lớp stack)
+    in property <[ [float] ]> raw_values_raw: [
+        [40,45,35,30,30,35,40,45,50,35,40,30,45,40,35,40,30,35,40,30,35,40,30,35,40,45,50,35,40,30],
+        [30,25,40,35,40,30,30,25,20,35,30,45,30,35,40,35,40,30,35,45,40,35,45,40,35,30,25,40,30,35],
+        [30,30,25,35,30,35,30,30,30,30,30,25,25,25,25,25,30,35,25,25,25,25,25,25,25,25,25,25,30,35],
+    ];
+
+    property <[color]> colors: [#b1b2b8, #ff3122, #0245ff];
+
+    // Hàm lấy giá trị từ raw_values (kiểu [ [float] ]) theo index lớp stack và index ngày
+    pure function get_value_raw(stack_idx: int, day_idx: int) -> float {
+        if (stack_idx >= 0 && stack_idx < raw_values_raw.length && day_idx >= 0 && day_idx < raw_values_raw[stack_idx].length) {
+            return raw_values_raw[stack_idx][day_idx];
+        }
+        return 0;
+    }
+    // 📊 Hàm cộng dồn giá trị theo tầng, sử dụng get_value_raw
+    pure function stacked_y_raw(i: int, day_idx: int) -> float {
+        if (i == 0) { return get_value_raw(0, day_idx) + get_value_raw(1, day_idx) + get_value_raw(2, day_idx); }
+        if (i == 1) { return get_value_raw(0, day_idx) + get_value_raw(1, day_idx); }
+        if (i == 2) { return get_value_raw(0, day_idx); }
+        return 0;
+    }
+    
+    // 🔍 Hàm lấy giá trị theo key
+    function get_value(values: {
+        d1: float, d2: float, d3: float, d4: float, d5: float, d6: float, d7: float, d8: float, d9: float, d10: float,
+        d11: float, d12: float, d13: float, d14: float, d15: float, d16: float, d17: float, d18: float, d19: float, d20: float,
+        d21: float, d22: float, d23: float, d24: float, d25: float, d26: float, d27: float, d28: float, d29: float, d30: float
+    }, key: string) -> float {
+        if (key == "d1") { return values.d1; }
+        if (key == "d2") { return values.d2; }
+        if (key == "d3") { return values.d3; }
+        if (key == "d4") { return values.d4; }
+        if (key == "d5") { return values.d5; }
+        if (key == "d6") { return values.d6; }
+        if (key == "d7") { return values.d7; }
+        if (key == "d8") { return values.d8; }
+        if (key == "d9") { return values.d9; }
+        if (key == "d10") { return values.d10; }
+        if (key == "d11") { return values.d11; }
+        if (key == "d12") { return values.d12; }
+        if (key == "d13") { return values.d13; }
+        if (key == "d14") { return values.d14; }
+        if (key == "d15") { return values.d15; }
+        if (key == "d16") { return values.d16; }
+        if (key == "d17") { return values.d17; }
+        if (key == "d18") { return values.d18; }
+        if (key == "d19") { return values.d19; }
+        if (key == "d20") { return values.d20; }
+        if (key == "d21") { return values.d21; }
+        if (key == "d22") { return values.d22; }
+        if (key == "d23") { return values.d23; }
+        if (key == "d24") { return values.d24; }
+        if (key == "d25") { return values.d25; }
+        if (key == "d26") { return values.d26; }
+        if (key == "d27") { return values.d27; }
+        if (key == "d28") { return values.d28; }
+        if (key == "d29") { return values.d29; }
+        if (key == "d30") { return values.d30; }
+        return 0;
+    }
+
+
+    // 📊 Cộng dồn giá trị theo tầng
+    function stacked_y(i: int, key: string) -> float {
+        // if (i == 0) { return get_value(raw_values[0], key) + get_value(raw_values[1], key) + get_value(raw_values[2], key); }
+        // if (i == 1) { return get_value(raw_values[0], key) + get_value(raw_values[1], key); }
+        // if (i == 2) { return get_value(raw_values[0], key); }
+        return 0;
+    }
+
+    // 🌀 Vẽ path mượt cho từng lớp
+    pure function path_data(i: int, h: float, w: float) -> string {
+        let denom = 30 - 1;   // vì có 30 điểm: d1 → d30
+
+        return
+            "M 0 " + (h - stacked_y(i, "d1") / 100 * h)
+            + make_curve(i, "d1", "d2", 1, w, h, denom)
+            + make_curve(i, "d2", "d3", 2, w, h, denom)
+            + make_curve(i, "d3", "d4", 3, w, h, denom)
+            + make_curve(i, "d4", "d5", 4, w, h, denom)
+            + make_curve(i, "d5", "d6", 5, w, h, denom)
+            + make_curve(i, "d6", "d7", 6, w, h, denom)
+            + make_curve(i, "d7", "d8", 7, w, h, denom)
+            + make_curve(i, "d8", "d9", 8, w, h, denom)
+            + make_curve(i, "d9", "d10", 9, w, h, denom)
+            + make_curve(i, "d10", "d11", 10, w, h, denom)
+            + make_curve(i, "d11", "d12", 11, w, h, denom)
+            + make_curve(i, "d12", "d13", 12, w, h, denom)
+            + make_curve(i, "d13", "d14", 13, w, h, denom)
+            + make_curve(i, "d14", "d15", 14, w, h, denom)
+            + make_curve(i, "d15", "d16", 15, w, h, denom)
+            + make_curve(i, "d16", "d17", 16, w, h, denom)
+            + make_curve(i, "d17", "d18", 17, w, h, denom)
+            + make_curve(i, "d18", "d19", 18, w, h, denom)
+            + make_curve(i, "d19", "d20", 19, w, h, denom)
+            + make_curve(i, "d20", "d21", 20, w, h, denom)
+            + make_curve(i, "d21", "d22", 21, w, h, denom)
+            + make_curve(i, "d22", "d23", 22, w, h, denom)
+            + make_curve(i, "d23", "d24", 23, w, h, denom)
+            + make_curve(i, "d24", "d25", 24, w, h, denom)
+            + make_curve(i, "d25", "d26", 25, w, h, denom)
+            + make_curve(i, "d26", "d27", 26, w, h, denom)
+            + make_curve(i, "d27", "d28", 27, w, h, denom)
+            + make_curve(i, "d28", "d29", 28, w, h, denom)
+            + make_curve(i, "d29", "d30", 29, w, h, denom)
+            + " L " + w + " " + h + " L 0 " + h + " Z";
+    }
+
+    // 🌀 Vẽ path mượt cho từng lớp (dùng make_curve_raw)
+    pure function path_data_raw(i: int, h: float, w: float) -> string {
+        let denom = 30 - 1; // 30 điểm: d1 → d30
+        // Bắt đầu tại điểm đầu tiên
+        let path = "M 0 " + (h - stacked_y_raw(i, 0) / 100 * h);
+        // Nối các điểm bằng cubic curve
+        path +
+            make_curve_raw(i, 0, 1, 1, w, h, denom) +
+            make_curve_raw(i, 1, 2, 2, w, h, denom) +
+            make_curve_raw(i, 2, 3, 3, w, h, denom) +
+            make_curve_raw(i, 3, 4, 4, w, h, denom) +
+            make_curve_raw(i, 4, 5, 5, w, h, denom) +
+            make_curve_raw(i, 5, 6, 6, w, h, denom) +
+            make_curve_raw(i, 6, 7, 7, w, h, denom) +
+            make_curve_raw(i, 7, 8, 8, w, h, denom) +
+            make_curve_raw(i, 8, 9, 9, w, h, denom) +
+            make_curve_raw(i, 9, 10, 10, w, h, denom) +
+            make_curve_raw(i, 10, 11, 11, w, h, denom) +
+            make_curve_raw(i, 11, 12, 12, w, h, denom) +
+            make_curve_raw(i, 12, 13, 13, w, h, denom) +
+            make_curve_raw(i, 13, 14, 14, w, h, denom) +
+            make_curve_raw(i, 14, 15, 15, w, h, denom) +
+            make_curve_raw(i, 15, 16, 16, w, h, denom) +
+            make_curve_raw(i, 16, 17, 17, w, h, denom) +
+            make_curve_raw(i, 17, 18, 18, w, h, denom) +
+            make_curve_raw(i, 18, 19, 19, w, h, denom) +
+            make_curve_raw(i, 19, 20, 20, w, h, denom) +
+            make_curve_raw(i, 20, 21, 21, w, h, denom) +
+            make_curve_raw(i, 21, 22, 22, w, h, denom) +
+            make_curve_raw(i, 22, 23, 23, w, h, denom) +
+            make_curve_raw(i, 23, 24, 24, w, h, denom) +
+            make_curve_raw(i, 24, 25, 25, w, h, denom) +
+            make_curve_raw(i, 25, 26, 26, w, h, denom) +
+            make_curve_raw(i, 26, 27, 27, w, h, denom) +
+            make_curve_raw(i, 27, 28, 28, w, h, denom) +
+            make_curve_raw(i, 28, 29, 29, w, h, denom) +
+            " L " + w + " " + h + " L 0 " + h + " Z"
+    }
+
+    pure function make_curve(
+        i: int,
+        key_prev: string,
+        key_next: string,
+        k: int,
+        w: float,
+        h: float,
+        denom: float
+    ) -> string {
+        let x0 = (k - 0.5) / denom * w;
+        let x = k / denom * w;
+        let y0 = h - stacked_y(i, key_prev) / 100 * h;
+        let y = h - stacked_y(i, key_next) / 100 * h;
+        return " C " + x0 + " " + y0 + ", " + x0 + " " + y + ", " + x + " " + y;
+    }
+    // 📈 Hàm tạo đoạn cubic curve giữa 2 điểm cho dữ liệu raw_values (kiểu [ [float] ])
+    pure function make_curve_raw(
+        i: int,
+        day_idx_prev: int,
+        day_idx_next: int,
+        k: int,
+        w: float,
+        h: float,
+        denom: float
+    ) -> string {
+        let x0 = (k - 0.5) / denom * w;
+        let x = k / denom * w;
+        let y0 = h - stacked_y_raw(i, day_idx_prev) / 100 * h;
+        let y = h - stacked_y_raw(i, day_idx_next) / 100 * h;
+        return " C " + x0 + " " + y0 + ", " + x0 + " " + y + ", " + x + " " + y;
+    }
+
+    // 🎨 Vẽ 3 lớp stack
+    for values[index] in raw_values_raw : Path {
+        fill: @linear-gradient(0deg, colors[index], colors[index]);
+        opacity: 0.85;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+        commands: parent.path_data_raw(index, self.viewbox-height, self.viewbox-width);
+    }
+    
+   
+    
+}
+
+export component StackedAreaChart_30d inherits Rectangle {
+    background: #565656;
+    width: 1000px;
+    in property <[string]> days: [
+        "01/10","02/10","03/10","04/10","05/10","06/10","07/10","08/10","09/10","10/10",
+        "11/10","12/10","13/10","14/10","15/10","16/10","17/10","18/10","19/10","20/10",
+        "21/10","22/10","23/10","24/10","25/10","26/10","27/10","28/10","29/10","30/10"
+    ];
+    in property <[ [float] ]> raw_values_raw: [];
+    StackedSmoothAreaChart_30d {
+        raw_values_raw: root.raw_values_raw;
+        x: 50px;
+        y: 20px;
+        width: parent.width - 50px;
+        height: parent.height - 45px;
+    }
+    // Vẽ nhãn ngày (trục X bên dưới)
+    HorizontalLayout {
+        x: 40px;
+        y: parent.height - 12px;
+        width: parent.width - 40px;
+        spacing: (self.width - 30 * 30px) / (30 - 1);
+        for day in days : Text {
+            text: day;
+            font-size: 10px;
+            color: #ffffff;
+            horizontal-alignment: center;
+            width: 30px;
+            font-weight: 700;
+        }
+    }
+
+    // Vẽ nhãn giá trị (trục Y bên trái)
+    VerticalLayout {
+        x: 0px;
+        y: 15px;
+        height: parent.height - 60px;
+        width: 40px;
+        spacing: (self.height - 11 * 10px) / (11 - 1);
+        for i in [100,90,80,70,60,50,40,30,20,10,0] : Text {
+            text: i + "";
+            font-size: 10px;
+            color: #ffffff;
+            horizontal-alignment: right;
+            font-weight: 700;
+        }
+    }
+}
+
+export component ChartColumn30D inherits Rectangle {
+    width: (bar-width + spacing)*30 + 80px;
+    height: 500px;
+    background: #f6f6f6;
+
+    in property <[{
+        day: string,
+        a: float,
+        b: float,
+        c: float,
+    }]> data: [
+        { day: "D1",  a: 35, b: 45, c: 25 },
+        { day: "D2",  a: 20, b: 30, c: 15 },
+        { day: "D3",  a: 50, b: 60, c: 40 },
+        { day: "D4",  a: 2115, b: 2235, c: 2220 },
+        { day: "D5",  a: 40, b: 55, c: 25 },
+        { day: "D6",  a: 30, b: 45, c: 35 },
+        { day: "D7",  a: 20, b: 50, c: 30 },
+        { day: "D8",  a: 25, b: 40, c: 45 },
+        { day: "D9",  a: 35, b: 55, c: 20 },
+        { day: "D10", a: 45, b: 35, c: 25 },
+        { day: "D11", a: 25, b: 30, c: 20 },
+        { day: "D12", a: 40, b: 60, c: 30 },
+        { day: "D13", a: 30, b: 35, c: 25 },
+        { day: "D14", a: 50, b: 45, c: 35 },
+        { day: "D15", a: 20, b: 25, c: 15 },
+        { day: "D16", a: 25, b: 40, c: 35 },
+        { day: "D17", a: 30, b: 50, c: 40 },
+        { day: "D18", a: 35, b: 45, c: 25 },
+        { day: "D19", a: 40, b: 30, c: 20 },
+        { day: "D20", a: 25, b: 55, c: 30 },
+        { day: "D21", a: 20, b: 40, c: 25 },
+        { day: "D22", a: 45, b: 35, c: 30 },
+        { day: "D23", a: 30, b: 60, c: 20 },
+        { day: "D24", a: 25, b: 30, c: 25 },
+        { day: "D25", a: 35, b: 50, c: 40 },
+        { day: "D26", a: 20, b: 45, c: 30 },
+        { day: "D27", a: 40, b: 55, c: 25 },
+        { day: "D28", a: 25, b: 35, c: 20 },
+        { day: "D29", a: 30, b: 50, c: 25 },
+        { day: "D30", a: 45, b: 40, c: 35 },
+    ];
+
+    // Chiều rộng cột & khoảng cách
+    property <length> bar-width: 18px;
+    property <length> spacing: 2px;
+    
+
+    // Hàm tiện ích tính tổng
+    pure function total(a: float, b: float, c: float) -> float {
+        return a + b + c;
+    }
+
+    Rectangle {
+        x: 40px;
+        y: 20px;
+        width: parent.width - 60px;
+        height: parent.height - 60px;
+        background: #ffffff;
+        border-radius: 6px;
+
+        // Vẽ từng cột stacked
+        for item[index] in root.data : Rectangle {
+            x: (root.bar-width + root.spacing) * index + 10px;
+            width: root.bar-width;
+            height: parent.height;
+            y: 0px;
+
+            // Tổng giá trị
+            property <float> t: root.total(item.a, item.b, item.c);
+
+            // A: phần dưới cùng
+            Rectangle {
+                height: parent.height * (item.a / parent.t);
+                y: parent.height - self.height;
+                width: parent.width;
+                background: #ff6b6b;
+            }
+
+            // B: nằm trên A
+            Rectangle {
+                height: parent.height * (item.b / parent.t);
+                y: parent.height - (parent.height * ((item.a + item.b) / parent.t));
+                width: parent.width;
+                background: #4dabf7;
+            }
+
+            // C: phần trên cùng
+            Rectangle {
+                height: parent.height * (item.c / parent.t);
+                // y: parent.height - parent.height; // gốc y=0, tự động stack
+                y: parent.height - (parent.height * ((item.a + item.b + item.c) / parent.t));
+                width: parent.width;
+                background: #69db7c;
+            }
+
+            // Nhãn ngày
+            Text {
+                text: item.day;
+                y: parent.height + 4px;
+                x: (root.bar-width - self.width) / 2;
+                font-size: 10px;
+                color: #444;
+            }
+        }
+    }
+}

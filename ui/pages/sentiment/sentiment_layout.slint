@@ -1,0 +1,563 @@
+import { SentimentIntensity, ListComboBox } from "sentiment_component.slint";
+import { ScrollView, ComboBox, LineEdit, StandardButton } from "std-widgets.slint";
+import { StackedAreaChart_30d } from "sentiment_chart.slint";
+import { AimSearchBar } from "../../widgets/aim_widget.slint";
+
+export component SentimentMain inherits Rectangle {
+    width: 1500px;
+    height: 720px;
+    background: #0f1720;
+
+    property <int> left_width: 320;
+    property <int> right_width: 360;
+    property <int> selectedLeftList: 0;
+    property <color> neu_color: #e9db14;
+    property <color> pos_color: #5868fc;
+    property <color> neg_color: #f74949;
+    property <color> header_color: #ffffff;
+    property <length> header_textsize: 15px;
+    property <length> header_height: 50px;
+    property <length> item_textsize: 13px;
+    property <length> item_height: 50px;
+
+    in property <[ [float] ]> sentiment_chart_array: [
+        [40,45,35,30,30,35,40,45,50,35,40,30,45,40,35,40,30,35,40,30,35,40,30,35,40,45,50,35,40,30],
+        [30,25,40,35,40,30,30,25,20,35,30,45,30,35,40,35,40,30,35,45,40,35,45,40,35,30,25,40,30,35],
+        [30,30,25,35,30,35,30,30,30,30,30,25,25,25,25,25,30,35,25,25,25,25,25,25,25,25,25,25,30,35],
+    ];
+
+    in property <[string]> chart_days: [
+        "01/10","02/10","03/10","04/10","05/10","06/10","07/10","08/10","09/10","10/10",
+        "11/10","12/10","13/10","14/10","15/10","16/10","17/10","18/10","19/10","20/10",
+        "21/10","22/10","23/10","24/10","25/10","26/10","27/10","28/10","29/10","30/10"
+    ];
+
+    callback onSentimentSearch(text: string);
+
+    // dữ liệu demo
+    in property <[ { title: string, subtitle: string, score: float, status_labels: [string] } ]> intensity_items: [
+        { title: "Độ Sôi Động", subtitle: "", score: 0.20, status_labels: ["Ít sôi động", "Bình thường", "Rất sôi động"] },
+        { title: "Tâm Lý Thị Trường", subtitle: "", score: 0.65, status_labels: ["Tiêu cực", "Trung lập", "Tích cực"] },
+    ];
+
+    in property <[{symbol: string, name: string, total: int, negative: int, positive: int, neutral: int, row_num: int}]> top_stocks: [
+        { symbol: "GEX", name: "Tập đoàn GELEX", total: 120, negative: 30, positive: 70, neutral: 20, row_num: 1 },
+        { symbol: "VNM", name: "Vinamilk", total: 95, negative: 25, positive: 50, neutral: 20, row_num: 2 },
+        { symbol: "SSI", name: "Chứng khoán SSI", total: 80, negative: 20, positive: 40, neutral: 20, row_num: 3 },
+        { symbol: "FPT", name: "FPT Corp", total: 110, negative: 35, positive: 55, neutral: 20, row_num: 4 },
+        { symbol: "REE", name: "REE Group", total: 70, negative: 15, positive: 35, neutral: 20, row_num: 5 },
+        { symbol: "BVH", name: "Bảo Việt", total: 85, negative: 22, positive: 43, neutral: 20, row_num: 6 },
+        { symbol: "ACB", name: "Ngân hàng ACB", total: 60, negative: 18, positive: 32, neutral: 10, row_num: 7 },
+        { symbol: "MSN", name: "Tập đoàn Masan", total: 75, negative: 20, positive: 40, neutral: 15, row_num: 8 },
+        { symbol: "VIC", name: "Tập đoàn Vingroup", total: 90, negative: 28, positive: 42, neutral: 20, row_num: 9 },
+        { symbol: "HDB", name: "Ngân hàng HDBank", total: 55, negative: 12, positive: 28, neutral: 15, row_num: 10 }
+    ];
+    
+    in property <[ { date: string, time: string, symbol: string, content: string, sentiment: string } ]> rumor_list: [
+        { date: "2025-11-10", time: "10:25", symbol: "GEX", content: "Tập đoàn GELEX sắp có động thái mới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:20", symbol: "VNM", content: "Vinamilk chuẩn bị ra mắt sản phẩm mới", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "10:15", symbol: "SSI", content: "Chứng khoán SSI có thể tăng mạnh trong thời gian tới, đó là điều tích cực nhất từ trước tới nay.", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:10", symbol: "FPT", content: "FPT Corp đang gặp khó khăn về tài chính", sentiment: "Tiêu cực" },
+        { date: "2025-11-10", time: "10:05", symbol: "REE", content: "REE Group có kế hoạch mở rộng thị trường", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:00", symbol: "BVH", content: "Bảo Việt sẽ hợp tác với đối tác lớn", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "09:55", symbol: "GEX", content: "Tập đoàn GELEX sắp có động thái mới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:50", symbol: "VNM", content: "Vinamilk chuẩn bị ra mắt sản phẩm mới", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "09:45", symbol: "SSI", content: "Chứng khoán SSI có thể tăng mạnh trong thời gian tới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:40", symbol: "FPT", content: "FPT Corp đang gặp khó khăn về tài chính", sentiment: "Tiêu cực" },
+        { date: "2025-11-10", time: "09:35", symbol: "REE", content: "REE Group có kế hoạch mở rộng thị trường", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:30", symbol: "BVH", content: "Bảo Việt sẽ hợp tác với đối tác lớn", sentiment: "Trung lập" }
+    ];
+
+    in property <[{keyword: string, total: int, score: float, row_num: int}]> trending_keywords: [
+        { keyword: "Cổ phiếu công nghệ", total: 150, score: 0.75, row_num: 1 },
+        { keyword: "Thị trường chứng khoán", total: 120, score: 0.60, row_num: 2 },
+        { keyword: "Đầu tư dài hạn", total: 100, score: 0.55, row_num: 3 },
+        { keyword: "Cổ phiếu ngân hàng", total: 90, score: 0.50, row_num: 4 },
+        { keyword: "Chứng khoán phái sinh", total: 80, score: 0.45, row_num: 5 },
+        { keyword: "Quỹ ETF", total: 70, score: 0.40, row_num: 6 },
+        { keyword: "Cổ phiếu bluechip", total: 60, score: 0.35, row_num: 7 },
+        { keyword: "Thị trường phái sinh", total: 50, score: 0.30, row_num: 8 },
+        { keyword: "Cổ phiếu penny", total: 40, score: 0.25, row_num: 9 },
+        { keyword: "Giao dịch ký quỹ", total: 30, score: 0.20, row_num: 10 }
+    ];
+
+    in property <[{date: string, time: string, symbol: string, advise: string, content: string}]> expert_advice : [
+        { date: "2025-11-10", time: "09:35", symbol: "GEX", advise: "Mua", content: "Khuyến nghị mua cổ phiếu GEX do tiềm năng tăng trưởng mạnh trong quý tới." },
+        { date: "2025-11-10", time: "09:30", symbol: "VNM", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu VNM do ổn định trong dài hạn." },
+        { date: "2025-11-10", time: "09:25", symbol: "SSI", advise: "Bán", content: "Khuyến nghị bán cổ phiếu SSI do biến động thị trường ngắn hạn." },
+        { date: "2025-11-10", time: "09:20", symbol: "FPT", advise: "Mua", content: "Khuyến nghị mua cổ phiếu FPT do triển vọng tích cực trong ngành công nghệ." },
+        { date: "2025-11-10", time: "09:15", symbol: "REE", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu REE do ổn định tài chính và kế hoạch mở rộng." },
+        { date: "2025-11-09", time: "09:35", symbol: "GEX", advise: "Mua", content: "Khuyến nghị mua cổ phiếu GEX do tiềm năng tăng trưởng mạnh trong quý tới." },
+        { date: "2025-11-08", time: "09:30", symbol: "VNM", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu VNM do ổn định trong dài hạn." },
+        { date: "2025-11-03", time: "09:25", symbol: "SSI", advise: "Bán", content: "Khuyến nghị bán cổ phiếu SSI do biến động thị trường ngắn hạn." },
+        { date: "2025-11-02", time: "07:45", symbol: "FPT", advise: "Mua", content: "Khuyến nghị mua cổ phiếu FPT do triển vọng tích cực trong ngành công nghệ." },
+        { date: "2025-11-02", time: "07:30", symbol: "REE", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu REE do ổn định tài chính và kế hoạch mở rộng." }
+    ];
+
+    in property <[ { date: string, time: string, sentiment: string, content: string, symbol:string } ]> all_contents: [
+            { date: "2025-11-10", time: "10:25", sentiment: "Tiêu cực", content: "AE chú ý Lệnh mua lẻ đợi của cá nhân", symbol: "GEX" },
+            { date: "2025-11-10", time: "10:20", sentiment: "Tích cực", content: "Cổ phiếu VNM có dấu hiệu tăng trưởng mạnh mẽ trong quý tới", symbol: "VNM" },
+            { date: "2025-11-10", time: "10:15", sentiment: "Trung lập", content: "Thị trường chứng khoán đang trong giai đoạn biến động, nhà đầu tư cần thận trọng", symbol: "SSI" },
+            { date: "2025-11-10", time: "10:10", sentiment: "Tiêu cực", content: "FPT Corp đang đối mặt với nhiều thách thức trong việc mở rộng thị trường quốc tế", symbol: "FPT" },
+            { date: "2025-11-10", time: "10:05", sentiment: "Tích cực", content: "REE Group công bố kế hoạch mở rộng đầu tư vào lĩnh vực năng lượng tái tạo", symbol: "REE" },
+            { date: "2025-11-10", time: "10:00", sentiment: "Trung lập", content: "Bảo Việt hợp tác với đối tác chiến lược để nâng cao dịch vụ khách hàng", symbol: "BVH" },
+            { date: "2025-11-10", time: "09:55", sentiment: "Tiêu cực", content: "AE chú ý Lệnh mua lẻ đợi của cá nhân", symbol: "GEX" },
+            { date: "2025-11-10", time: "09:50", sentiment: "Tích cực", content: "Cổ phiếu VNM có dấu hiệu tăng trưởng mạnh mẽ trong quý tới", symbol: "VNM" },
+            { date: "2025-11-10", time: "09:45", sentiment: "Trung lập", content: "Thị trường chứng khoán đang trong giai đoạn biến động, nhà đầu tư cần thận trọng", symbol: "SSI" },
+            { date: "2025-11-10", time: "09:40", sentiment: "Tiêu cực", content: "FPT Corp đang đối mặt với nhiều thách thức trong việc mở rộng thị trường quốc tế", symbol: "FPT" },
+            { date: "2025-11-10", time: "09:35", sentiment: "Tích cực", content: "REE Group công bố kế hoạch mở rộng đầu tư vào lĩnh vực năng lượng tái tạo", symbol: "REE" }
+    ];
+
+    
+    VerticalLayout {
+        height: 100%;
+        width: 100%;
+
+        HorizontalLayout {
+            width: 100%;
+            height: 20%;
+            spacing: 6px;
+
+            HorizontalLayout {
+                // width: 40%;
+                height: 100%;
+                spacing: 6px;
+                for item in intensity_items: SentimentIntensity{
+                    in_title: item.title;
+                    score: item.score;
+                    status_labels: item.status_labels;
+                }
+            }
+            Rectangle {
+                horizontal-stretch: 1;
+                // width: 60%;
+                height: 100%;
+                StackedAreaChart_30d{
+                    raw_values_raw: root.sentiment_chart_array;
+                    days: root.chart_days;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+        }
+        Rectangle {
+            width: 100%;
+            height: 1%;
+        }
+        // HorizontalLayout dưới: 2 ScrollView
+        HorizontalLayout {
+            width: root.width;
+            height: 70%;
+
+            VerticalLayout {
+                width: 33%;
+                height: 100%;
+
+                Rectangle {
+                    width: 100%;
+                    height: header_height;
+                    
+                    ListComboBox {
+                        width: 100%;
+                        height: 80%;
+                        model: ["Danh sách TOP cổ phiếu được nhắc đến", "Danh sách tin đồn", "Trending Keywords", "Chuyên gia nói gì!"];
+                        current-index: 0;
+                        on_selected(index, value) => {    
+                            selectedLeftList = index;
+                        }
+                    }
+                }
+
+                // ScrollView trái
+                VerticalLayout {
+                    width: 100%;
+                    height: 100%;
+                    // Header cho từng list
+                    Rectangle {
+                        width: 100%;
+                        height: header_height;
+                        background: #5c5a5a;
+
+                        HorizontalLayout {
+                            visible: selectedLeftList == 0;
+                            spacing: 6px;
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            width: 100%;
+                            VerticalLayout { 
+                                horizontal-stretch: 1; alignment: center; 
+                                Text { text: "Mã"; color: #b0b8c1; font-size: header_textsize; horizontal-alignment: left;} 
+                            }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Tổng"; color: #b0b8c1; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Tích cực"; color: pos_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Tiêu cực"; color: neg_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Trung lập"; color: neu_color; font-size: header_textsize; horizontal-alignment: center;} }
+                        }
+                        HorizontalLayout {
+                            visible: selectedLeftList == 1;
+                            spacing: 6px;
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            width: 100%;
+                            VerticalLayout { width: 100px; alignment: center; Text { text: "Thời gian"; color: header_color; font-size: header_textsize; }}
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Mã"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Cảm xúc"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { horizontal-stretch: 1; alignment: center; Text { text: "Nội dung"; color: header_color; font-size: header_textsize; horizontal-alignment: left;} }
+                        }
+                        HorizontalLayout {
+                            visible: selectedLeftList == 2;
+                            spacing: 6px;
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            width: 100%;
+                            VerticalLayout { horizontal-stretch: 1; alignment: center; Text { text: "Từ khóa"; color: header_color; font-size: header_textsize; horizontal-alignment: left;} }
+                            VerticalLayout { width: 100px; alignment: center; Text { text: "Tần suất"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 100px; alignment: center; Text { text: "Tăng trưởng"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                        }
+                        HorizontalLayout {
+                            visible: selectedLeftList == 3;
+                            spacing: 6px;
+                            padding-left: 6px;
+                            padding-right: 6px;
+                            width: 100%;
+                            VerticalLayout { width: 100px; alignment: center; Text { text: "Thời gian"; color: header_color; font-size: header_textsize; } }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Cổ phiếu"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { width: 80px; alignment: center; Text { text: "Khuyến nghị"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                            VerticalLayout { horizontal-stretch: 1; alignment: center; Text { text: "Nội dung"; color: header_color; font-size: header_textsize; horizontal-alignment: left;} }
+                        }
+                    }
+                    
+                    // List nội dung
+                    ScrollView {
+                        width: 100%;
+                        height: 100%;
+                        VerticalLayout {
+                            visible: selectedLeftList == 0;
+                            for item[index] in top_stocks: Rectangle {
+                                width: 100%;
+                                height: item_height;
+                                background: Math.mod(index, 2) == 0 ? #23272f : #181a1f;
+                                border-width: 1px;
+                                border-color: #26313f;
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    padding-left: 6px;
+                                    padding-top: 6px;
+                                    width: 100%;
+                                    VerticalLayout {
+                                        horizontal-stretch: 1;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: item.symbol; color: white; font-size: header_textsize; }
+                                        Text { text: item.name; color: white; font-size: item_textsize; }
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: item.total; color: white; font-size: item_textsize; horizontal-alignment: center;}
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: item.positive; color: pos_color; font-size: item_textsize; horizontal-alignment: center;}
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: item.negative; color: neg_color; font-size: item_textsize; horizontal-alignment: center;}
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: item.neutral; color: neu_color; font-size: item_textsize; horizontal-alignment: center;}
+                                    }
+                                }
+                            }
+                        }
+                        VerticalLayout {
+                            visible: selectedLeftList == 1;
+                            for rumor[index] in rumor_list: Rectangle {
+                                width: 100%;
+                                height: item_height;
+                                background: Math.mod(index, 2) == 0 ? #23272f : #181a1f;
+                                border-width: 1px;
+                                border-color: #26313f;
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    padding-left: 6px;
+                                    padding-top: 6px;
+                                    width: 100%;
+                                    // 3 cột bằng nhau
+                                    VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: rumor.date;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                        Text {
+                                            text: rumor.time;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: rumor.symbol; color: white; font-size: item_textsize; horizontal-alignment: center;  }
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: rumor.sentiment;
+                                            color: rumor.sentiment == "Tích cực" ? pos_color : rumor.sentiment == "Tiêu cực" ? neg_color : rumor.sentiment == "Trung lập" ? neu_color : white;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        horizontal-stretch: 1;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: rumor.content;
+                                            color: white;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: left;
+                                            wrap: word-wrap;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        VerticalLayout {
+                            visible: selectedLeftList == 2;
+                            for keyword[index] in trending_keywords: Rectangle {
+                                width: 100%;
+                                height: item_height;
+                                background: Math.mod(index, 2) == 0 ? #23272f : #181a1f;
+                                border-width: 1px;
+                                border-color: #26313f;
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    padding-left: 6px;
+                                    padding-top: 6px;
+                                    width: 100%;
+                                    // 3 cột bằng nhau
+                                    VerticalLayout {
+                                        horizontal-stretch: 1;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: keyword.keyword; color: white; font-size: item_textsize; horizontal-alignment: left; }
+                                    }
+                                    VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: keyword.total; color: white; font-size: item_textsize; horizontal-alignment: center;}
+                                    }
+                                    VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: (round(keyword.score * 100)) + "%";
+                                            color: keyword.score >= 0 ? pos_color : neg_color;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        VerticalLayout {
+                            visible: selectedLeftList == 3;
+                            for advice[index] in expert_advice: Rectangle {
+                                width: 100%;
+                                height: item_height;
+                                background: Math.mod(index, 2) == 0 ? #23272f : #181a1f;
+                                border-width: 1px;
+                                border-color: #26313f;
+                                HorizontalLayout {
+                                    spacing: 6px;
+                                    padding-left: 6px;
+                                    padding-top: 6px;
+                                    width: 100%;
+                                  
+                                    VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: advice.date;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                        Text {
+                                            text: advice.time;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text { text: advice.symbol; color: white; font-size: item_textsize; horizontal-alignment: center;  }
+                                    }
+                                    VerticalLayout {
+                                        width: 80px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: advice.advise;
+                                            color: advice.advise == "Mua" ? pos_color : advice.advise == "Bán" ? neg_color : neu_color;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        horizontal-stretch: 1;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: advice.content;
+                                            color: white;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: left;
+                                            wrap: word-wrap;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+            
+
+            Rectangle {
+                width: 1%;
+                height: 100%;
+            }
+
+            VerticalLayout {
+                width: 66%;
+                height: 100%;
+                //search bar ở trên cùng
+                Rectangle {
+                    width: 300px;
+                    height: header_height;
+                    AimSearchBar {
+                        width: 100%;
+                        height: 60%;
+                        placeholder_text: "Tìm kiếm tin tức, bài phân tích...";
+                        font-size: 12px;
+                            accepted(text) => {
+                                self.clear-input-focus();
+                                onSentimentSearch(text);
+                            }
+                    }
+                }
+                // Header
+                Rectangle {
+                    width: 100%;
+                    height: header_height;
+                    background: #5c5a5a;
+
+                    HorizontalLayout {
+                        spacing: 6px;
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        width: 100%;
+                        VerticalLayout { width: 100px; alignment: center; Text { text: "Thời gian"; color: header_color; font-size: header_textsize; } }
+                        VerticalLayout { width: 100px; alignment: center; Text { text: "Chứng khoán"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                        VerticalLayout { width: 100px; alignment: center; Text { text: "Cảm xúc"; color: header_color; font-size: header_textsize; horizontal-alignment: center;} }
+                        VerticalLayout { horizontal-stretch: 1; alignment: center; Text { text: "Nội dung"; color: header_color; font-size: header_textsize; horizontal-alignment: left;} }
+                    }
+                }
+
+                ScrollView {
+                    
+                    VerticalLayout {
+                        for content[index] in all_contents: Rectangle {
+                            width: 100%;
+                            height: item_height;
+                            background: Math.mod(index, 2) == 0 ? #23272f : #181a1f;
+                            border-width: 1px;
+                            border-color: #26313f;
+                            HorizontalLayout {
+                                spacing: 6px;
+                                padding-left: 6px;
+                                padding-top: 6px;
+                                width: 100%;
+                                VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: content.date;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                        Text {
+                                            text: content.time;
+                                            color: white;
+                                            font-size: item_textsize;
+                                        }
+                                    }
+                                    VerticalLayout {
+                                        width: 100px;
+                                        spacing: 6px;
+                                        alignment: center;
+                                        Text {
+                                            text: content.symbol;
+                                            color: white;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: center;
+                                        }
+                                    }
+                                VerticalLayout {
+                                    width: 100px;
+                                    spacing: 6px;
+                                    alignment: center;
+                                    Text {
+                                        text: content.sentiment;
+                                        color: content.sentiment == "Tích cực" ? pos_color : content.sentiment == "Tiêu cực" ? neg_color : neu_color;
+                                        font-size: item_textsize;
+                                        horizontal-alignment: center;
+                                    }
+                                }
+                                VerticalLayout {
+                                    horizontal-stretch: 1;
+                                    spacing: 6px;
+                                    alignment: center;
+                                    
+                                    Text {
+                                            text: content.content;
+                                            color: white;
+                                            font-size: item_textsize;
+                                            horizontal-alignment: left;
+                                            wrap: word-wrap;
+                                        }                           
+                                    
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+        }
+    }
+}

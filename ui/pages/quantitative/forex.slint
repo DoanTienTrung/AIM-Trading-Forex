@@ -1,0 +1,300 @@
+import { Button, LineEdit, ScrollView, } from "std-widgets.slint";
+
+export struct ForexData {
+    symbol: string,           // "^USDNZD"
+    name: string,            // "U.S. Dollar/New Zealand Dollar"
+    last: string,            // "1.7126"
+    change: string,          // "-0.013"
+    percent_change: string,  // "-0.75%"
+    open: string,            // "1.7259"
+    high: string,            // "1.7273"
+    low: string,             // "1.7114"
+    time: string,            // "23/12/25"
+    is_up: bool,             // true if price_change > 0
+}
+
+// 1. Component chứa Biểu đồ
+component ChartBox inherits Rectangle {
+    background: transparent;
+    border-radius: 8px;
+    border-color: gray;
+    border-width: 2px;
+    Text { text: "Biểu đồ USD/VND"; color: white; }
+}
+
+// 2. Component chứa Văn bản phân tích
+component TextBox inherits Rectangle {
+    background: transparent;
+    border-radius: 8px;
+    border-color: gray;
+    border-width: 2px;
+    VerticalLayout {
+        padding: 15px;
+        spacing: 5px;
+        Text { text: "U.S. Dollar/Vietnam Dong"; font-size: 16px; color: #45aaf2; }
+        Text { 
+            text: "Tỷ giá USD/VND duy trì xu hướng ổn định..."; 
+            color: #bdc3c7; 
+           
+        }
+    }
+}
+
+// 3. Component chứa Bảng dữ liệu
+component TableBox inherits Rectangle {
+    background: #1e1e1e;
+    border-radius: 8px;
+
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+    in property <bool> is_loading: false;
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+
+    VerticalLayout {
+        padding: 10px;
+        spacing: 10px;
+
+        // --- THANH CÔNG CỤ (Giữ nguyên) ---
+         HorizontalLayout {
+            spacing: 5px; 
+            height: 30px; 
+            alignment: start;
+
+            Rectangle {
+                width: 60px; height: 30px; border-radius: 4px;
+                background: root.selected_groups == "USD" ? #00b894 : #2f3640;
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    // ✅ Trigger callback
+                    clicked => { root.on_group_selected("USD"); }
+                }
+                Text {
+                    text: "USD";
+                    color: white;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                width: 60px; height: 30px; border-radius: 4px;
+                // ✅ Thêm logic này
+                background: root.selected_groups == "EUR" ? #00b894 : #2f3640;
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    // ✅ Trigger callback
+                    clicked => { root.on_group_selected("EUR"); }
+                }
+                Text {
+                    text: "EUR";
+                    color: white;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                width: 60px; height: 30px; border-radius: 4px;
+                // ✅ Thêm logic này
+                background: root.selected_groups == "VND" ? #00b894 : #2f3640;
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    // ✅ Trigger callback
+                    clicked => { root.on_group_selected("VND"); }
+                }
+                Text {
+                    text: "VND";
+                    color: white;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                width: 60px; height: 30px; border-radius: 4px;
+                // ✅ Thêm logic này
+                background: root.selected_groups == "CNY" ? #00b894 : #2f3640;
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    // ✅ Trigger callback
+                    clicked => { root.on_group_selected("CNY"); }
+                }
+                Text {
+                    text: "CNY";
+                    color: white;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            // Nút JPY đang được chọn (Active)
+            Rectangle {
+                width: 60px; height: 30px; border-radius: 4px;
+                // ✅ Thêm logic này
+                background: root.selected_groups == "JPY" ? #00b894 : #2f3640;
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    // ✅ Trigger callback
+                    clicked => { root.on_group_selected("JPY"); }
+                }
+                Text {
+                    text: "JPY";
+                    color: white;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                width: 200px; 
+                height: 30px;
+                background: transparent; // Nền tối
+                border-radius: 4px;
+                border-width: 1px; 
+                border-color: #333;
+
+                HorizontalLayout {
+                    padding-left: 10px; spacing: 8px;
+                    
+                    // Icon kính lúp
+                    Text {
+                        text: "🔍";
+                        color: #666;
+                        vertical-alignment: center;
+                    }
+
+                    // Ô nhập liệu - TextInput mặc định ĐÃ TRONG SUỐT
+                    TextInput {
+                        width: 100%;
+                        font-size: 14px;
+                        color: white; // Màu chữ khi nhập
+                        vertical-alignment: center;
+                        single-line: true;
+                        
+                        // Xử lý Placeholder (vì TextInput không có sẵn placeholder-text)
+                        if self.text == "" : Text {
+                            text: "Search";
+                            color: #555;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+        // --- BẢNG DỮ LIỆU ---
+        // Sử dụng 1 GridLayout duy nhất cho cả Header và Body
+        VerticalLayout {
+            // Header cố định
+            Rectangle {
+                height: 30px;
+                background: #1a1a1a;
+                header_grid := GridLayout {
+                    padding-left: 10px; padding-right: 10px; spacing: 10px;
+                    Text { text: "Symbol"; col: 0; width: 80px; color: #888; }
+                    Text { text: "Name"; col: 1; horizontal-stretch: 1; color: #888; }
+                    Text { text: "Last"; col: 2; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "Change"; col: 3; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "%Change"; col: 4; width: 70px; horizontal-alignment: right; color: #888; }
+                    Text { text: "Open"; col: 5; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "High"; col: 6; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "Low"; col: 7; width: 80px; horizontal-alignment: right; color: #888; }
+                    Text { text: "Time"; col: 8; width: 80px; horizontal-alignment: right; color: #888; }
+                }
+                Rectangle { height: 1px; background: #13509f; y: parent.height - 1px; }
+            }
+
+            // Body có thể cuộn
+            ScrollView {
+                VerticalLayout {
+                    alignment: start;
+                    spacing: 0px;
+                    for data in root.forex_list : Rectangle {
+                        height: 40px;
+                        background: #1e1e1e;
+                        
+                        // Layout dữ liệu khớp chính xác với Header bằng cách dùng cùng thông số width
+                        GridLayout {
+                            padding-left: 10px; padding-right: 10px; spacing: 10px;
+                            Text { text: data.symbol; col: 0; width: 80px; color: #45aaf2; vertical-alignment: center; }
+                            Text { text: data.name; col: 1; vertical-alignment: center; horizontal-stretch: 1; color: #bdc3c7; overflow: elide; }
+                            Text { text: data.last; col: 2; width: 80px; horizontal-alignment: right; color: white; vertical-alignment: center;}
+                            Text { text: data.change; col: 3; width: 80px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b;vertical-alignment: center; }
+                            Text { text: data.percent_change; col: 4; width: 70px; horizontal-alignment: right; color: data.is_up ? #26de81 : #eb4d4b; vertical-alignment: center; }
+                            Text { text: data.open; col: 5; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center; }
+                            Text { text: data.high; col: 6; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
+                            Text { text: data.low; col: 7; width: 80px; horizontal-alignment: right; color: #bdc3c7; vertical-alignment: center;}
+                            Text { text: data.time; col: 8; width: 80px; horizontal-alignment: right; color: #888; vertical-alignment: center;}
+                        }
+                        Rectangle { height: 1px; background: #2d2d2d; y: parent.height - 1px; }
+                    }
+                }
+            }
+        }
+    }
+}
+// main component
+export component Forex inherits Rectangle {
+   
+    preferred-width: 1200px;
+    preferred-height: 800px;
+    min-width: 800px;
+    min-height: 400px;
+
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+    in-out property <bool> is_loading: false;
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+
+    GridLayout {
+        padding: 4px;
+        spacing: 6px;
+
+        // Cột 1 (Bên trái), Hàng 0: Ô Chart
+        ChartBox {
+            row: 0;
+            col: 0;
+            vertical-stretch: 1; // Tỉ lệ chiều cao
+            horizontal-stretch: 35; // Chiếm khoảng 35-40% chiều ngang
+        }
+
+        // Cột 1 (Bên trái), Hàng 1: Ô Text
+        TextBox {
+            row: 1;
+            col: 0;
+            vertical-stretch: 1;
+           horizontal-stretch: 35;
+        }
+
+        // Cột 2 (Bên phải), Chiếm cả 2 hàng: Ô Table
+        TableBox {
+            forex_list: root.forex_list;
+            selected_groups: root.selected_groups;
+            on_group_selected(group) => {
+                root.on_group_selected(group);
+            }
+            row: 0;
+            col: 1;
+            rowspan: 2; // Quan trọng: Nhập 2 hàng lại làm một
+            horizontal-stretch: 65; // Chiếm phần lớn chiều ngang (khoảng 60-65%)
+        }
+    }
+}

@@ -1,0 +1,1187 @@
+import { ListView, ScrollView } from "std-widgets.slint";
+import { TextButton } from "../../widgets/aim_widget.slint";
+import { SharedHolder, Officer, Subsidiary, InsiderTransaction, FinanceName, FinanceValue, FinanceList, HeaderData } from "finance_type.slint";
+import { Utils, StockData } from "../../data_type.slint";
+import { StockHeader } from "finance.slint";
+
+export component StockInfo inherits Rectangle {
+    in property <string> name: "giá sàn";
+    in property <float> value: 0.0;
+    in property <color> font-color: #FFFFFF;
+
+    HorizontalLayout {
+        spacing: 2px;
+        Text {
+            text: name;
+            color: #999999;
+            font-size: 12px;
+            vertical-alignment: center;
+            horizontal-alignment: left;
+        }
+        Text {
+            text: value.to-fixed(2);
+            color: font-color;
+            font-size: 13px;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+    }
+}
+
+export component OfficersList inherits Rectangle {
+    in property <[Officer]> officers;
+    background: #181818;
+    
+    HorizontalLayout {
+        padding: 20px;
+        spacing: 20px;
+        
+        // Left side - Officers table
+        VerticalLayout {
+            spacing: 16px;
+            width: 60%;
+            
+            // Header section
+            Rectangle {
+                height: 50px;
+                background: #2a2a2a;
+                border-radius: 10px;
+                
+                HorizontalLayout {
+                    padding: 16px;
+                    
+                    VerticalLayout {
+                        Text {
+                            text: "BAN LÃNH ĐẠO";
+                            color: #FFFFFF;
+                            font-size: 18px;
+                            font-weight: 700;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                    }
+                    
+                    Rectangle {} // Spacer
+                    
+                    Text {
+                        text: @tr("{} thành viên", officers.length);
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            
+            // Officers list
+            if officers.length > 0: ListView {
+                for officer[index] in officers: Rectangle {
+                    height: 50px;
+                    background: Math.mod(index, 2) == 0 ? #2a2a2a : #252525;
+                    border-radius: 8px;
+                    
+                    HorizontalLayout {
+                        padding: 12px;
+                        spacing: 8px;
+                        
+                        Text {
+                            text: officer.name;
+                            color: #FFFFFF;
+                            font-size: 12px;
+                            font-weight: 500;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        
+                        Text {
+                            text: officer.position;
+                            color: #E0E0E0;
+                            font-size: 12px;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+            
+            // Empty state
+            if officers.length == 0: Rectangle {
+                height: 200px;
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 12px;
+                    
+                    Text {
+                        text: "👥";
+                        color: #555555;
+                        font-size: 32px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "Không có dữ liệu ban lãnh đạo";
+                        color: #888888;
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        
+        // Right side - Officer profile
+        VerticalLayout {
+            spacing: 16px;
+            width: 40%;
+            
+            // Officer image and basic info
+            Rectangle {
+                height: 200px;
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    
+                    // Profile photo section
+                    Rectangle {
+                        height: 80px;
+                        width: 80px;
+                        background: #404040;
+                        border-radius: 40px;
+                        
+                        HorizontalLayout {
+                            alignment: center;
+                            Text {
+                                text: "👤";
+                                color: #888888;
+                                font-size: 32px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    
+                    Text {
+                        text: officers.length > 0 ? officers[0].name : "Chọn thành viên";
+                        color: #FFFFFF;
+                        font-size: 16px;
+                        font-weight: 700;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    
+                    Text {
+                        text: officers.length > 0 ? officers[0].position : "Chức vụ";
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            
+            // Detailed information
+            Rectangle {
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    
+                    Text {
+                        text: "QUÁ TRÌNH CÔNG TÁC";
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                    }
+                    
+                    VerticalLayout {
+                        spacing: 8px;
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Từ 2006 - T1/2008:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Phó trưởng ban đầu tư xây dựng Tổng Công ty Hóa chất Việt Nam";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "T1/2008 - T7/2008:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Phụ trách ban Đầu tư xây dựng Tổng Công ty Hóa chất Việt Nam";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Từ 8/2008:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Trưởng ban đầu tư xây dựng Tổng Công ty Hóa chất Việt Nam; Chủ tịch HĐQT CTCP DAP số 2 - Vinachem";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "25/04/2018 - 25/06/2020:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Chủ tịch HĐQT CTCP Cao Su Đà Nẵng (Mã CK: DRC)";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Từ 26/06/2020:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Chủ tịch HĐQT CTCP DAP - VINACHEM (Mã CK: DDV)";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "27/04/2022 - 29/04/2024:";
+                                color: #E0E0E0;
+                                font-size: 12px;
+                                width: 40%;
+                            }
+                            Text {
+                                text: "Chủ tịch HĐQT CTCP Hóa chất Cơ bản miền Nam (Mã CK: CSV)";
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                width: 60%;
+                            }
+                        }
+                    }
+                    
+                    Text {
+                        text: "BẰNG CẤP, CHỨNG CHỈ, KHEN THƯỞNG, KỶ LUẬT";
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                    }
+                    
+                    Text {
+                        text: "Thạc sĩ xây dựng và công nghiệp";
+                        color: #E0E0E0;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component InsiderTransactionsList inherits Rectangle {
+    in property <[InsiderTransaction]> transactions;
+    background: #181818;
+    
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        
+        // Header section
+        Rectangle {
+            height: 50px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            
+            HorizontalLayout {
+                padding: 16px;
+                
+                VerticalLayout {
+                    Text {
+                        text: "GIAO DỊCH NỘI BỘ";
+                        color: #FFFFFF;
+                        font-size: 18px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Rectangle {} // Spacer
+                
+                Text {
+                    text: @tr("{} giao dịch", transactions.length);
+                    color: #00D4AA;
+                    font-size: 14px;
+                    font-weight: 600;
+                    horizontal-alignment: right;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        
+        // Table header
+        if transactions.length > 0: Rectangle {
+            height: 60px;
+            background: #333333;
+            border-radius: 8px;
+            
+            HorizontalLayout {
+                padding: 12px;
+                spacing: 8px;
+                
+                Text {
+                    text: "TÊN";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 12%;
+                }
+                Text {
+                    text: "GIAO DỊCH";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 12%;
+                }
+                Text {
+                    text: "KL ĐĂNG KÝ";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 12%;
+                }
+                Text {
+                    text: "KL THỰC HIỆN";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 12%;
+                }
+                Text {
+                    text: "NGÀY ĐĂNG KÝ";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 13%;
+                }
+                Text {
+                    text: "NGÀY THỰC HIỆN";
+                    color: #FFFFFF;
+                    font-size: 12px;
+                    font-weight: 600;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    width: 13%;
+                }
+            }
+        }
+        
+        // Transactions list
+        if transactions.length > 0: ListView {
+            for transaction[index] in transactions: Rectangle {
+                height: 50px;
+                background: Math.mod(index, 2) == 0 ? #2a2a2a : #252525;
+                border-radius: 8px;
+                
+                HorizontalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    
+                    // Name column
+                    Text {
+                        text: transaction.name;
+                        color: #FFFFFF;
+                        font-size: 12px;
+                        font-weight: 500;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 12%;
+                        wrap: word-wrap;
+                    }
+                    
+                    // Transaction type column with color coding
+                    Text {
+                        text: transaction.transaction_type;
+                        color: transaction.transaction_type == "Mua" ? #00D4AA : 
+                              transaction.transaction_type == "Bán" ? #FF4444 : #FFFFFF;
+                        font-size: 12px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 12%;
+                    }
+                    
+                    // Registered quantity column
+                    Text {
+                        text: @tr("{} CP", Utils.parse_volume(transaction.registered_quantity));
+                        color: #E0E0E0;
+                        font-size: 12px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 12%;
+                    }
+                    
+                    // Executed quantity column
+                    Text {
+                        text: @tr("{} CP", Utils.parse_volume(transaction.executed_quantity));
+                        color: #E0E0E0;
+                        font-size: 12px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 12%;
+                    }
+                    
+                    // Registration date column
+                    Text {
+                        text: transaction.registration_date;
+                        color: #888888;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 13%;
+                    }
+                    
+                    // Execution date column
+                    Text {
+                        text: transaction.execution_date;
+                        color: #888888;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                        width: 13%;
+                    }
+                }
+            }
+        }
+        
+        // Empty state
+        if transactions.length == 0: Rectangle {
+            height: 200px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            
+            VerticalLayout {
+                alignment: center;
+                spacing: 12px;
+                
+                Text {
+                    text: "📈";
+                    color: #555555;
+                    font-size: 32px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Không có dữ liệu giao dịch nội bộ";
+                    color: #888888;
+                    font-size: 16px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Thông tin giao dịch sẽ được cập nhật khi có dữ liệu mới";
+                    color: #666666;
+                    font-size: 12px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+export component SubsidiariesList inherits Rectangle {
+    in property <[Subsidiary]> subsidiaries;
+    in property <string> company_name: "CÔNG TY CỔ PHẦN KHU CÔNG NGHIỆP KỸ THUẬT CAO AN PHÁT 1";
+    in property <string> stock_code: "0801298395";
+    in property <string> address: "Khu Công nghiệp kỹ thuật cao An Phát, Km47, Quốc lộ 5, Phường Việt Hòa, Thành phố Hải Dương, Tỉnh Hải Dương, Việt Nam";
+    in property <string> representative: "PHẠM VĂN TUẤN";
+    in property <string> activity_date: "2019-09-25";
+    in property <string> business_field: "Kinh doanh bất động sản, quyền sử dụng đất thuộc chủ sở hữu, chủ sử dụng hoặc đi thuê";
+    in property <image> company_logo;
+    
+    background: #181818;
+    
+    HorizontalLayout {
+        padding: 20px;
+        spacing: 20px;
+        
+        // Left side - Subsidiaries table
+        VerticalLayout {
+            spacing: 16px;
+            width: 60%;
+            
+            // Header section
+            Rectangle {
+                height: 50px;
+                background: #2a2a2a;
+                border-radius: 10px;
+                
+                HorizontalLayout {
+                    padding: 16px;
+                    
+                    VerticalLayout {
+                        Text {
+                            text: "TÊN CÔNG TY CON";
+                            color: #FFFFFF;
+                            font-size: 18px;
+                            font-weight: 700;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                    }
+                    
+                    Rectangle {} // Spacer
+                    
+                    Text {
+                        text: @tr("{} công ty", subsidiaries.length);
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+
+            // Subsidiaries list
+            if subsidiaries.length > 0: ListView {
+                for subsidiary[index] in subsidiaries: Rectangle {
+                    height: 60px;
+                    background: Math.mod(index, 2) == 0 ? #2a2a2a : #252525;
+                    border-radius: 8px;
+                    
+                    HorizontalLayout {
+                        padding: 16px;
+                        spacing: 12px;
+                        
+                        Text {
+                            text: subsidiary.name;
+                            color: #FFFFFF;
+                            font-size: 14px;
+                            font-weight: 500;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                            wrap: word-wrap;
+                            width: 50%;
+                        }
+                        
+                        Text {
+                            text: @tr("{} tỷ", Utils.parse_volume(subsidiary.charter_capital));
+                            color: #E0E0E0;
+                            font-size: 13px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            width: 25%;
+                        }
+                        
+                        Text {
+                            text: subsidiary.ownership_percent.to-fixed(2) + "%";
+                            color: #FFA500;
+                            font-size: 13px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            width: 25%;
+                        }
+                    }
+                }
+            }
+            
+            // Empty state
+            if subsidiaries.length == 0: Rectangle {
+                height: 200px;
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 12px;
+                    
+                    Text {
+                        text: "🏢";
+                        color: #555555;
+                        font-size: 32px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: "Không có dữ liệu công ty con";
+                        color: #888888;
+                        font-size: 16px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        
+        // Right side - Company profile
+        VerticalLayout {
+            spacing: 16px;
+            width: 40%;
+            
+            // Company logo and basic info
+            Rectangle {
+                height: 200px;
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    
+                    // Logo section
+                    Rectangle {
+                        height: 80px;
+                        
+                        if company_logo.width > 0: Image {
+                            source: company_logo;
+                            width: 80px;
+                            height: 80px;
+                            image-fit: contain;
+                            horizontal-alignment: center;
+                        }
+                        
+                        if company_logo.width == 0: Rectangle {
+                            width: 80px;
+                            height: 80px;
+                            background: #404040;
+                            border-radius: 8px;
+                            
+                            HorizontalLayout {
+                                alignment: center;
+                                Text {
+                                    text: "LOGO";
+                                    color: #888888;
+                                    font-size: 12px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                    
+                    Text {
+                        text: company_name;
+                        color: #FFFFFF;
+                        font-size: 16px;
+                        font-weight: 700;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            
+            // Detailed information
+            Rectangle {
+                background: #2a2a2a;
+                border-radius: 12px;
+                
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    
+                    Text {
+                        text: "QUÁ TRÌNH CÔNG TÁC";
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                    }
+                    
+                    VerticalLayout {
+                        spacing: 8px;
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Mã số thuế:";
+                                color: #888888;
+                                font-size: 12px;
+                                width: 30%;
+                            }
+                            Text {
+                                text: stock_code;
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Địa chỉ:";
+                                color: #888888;
+                                font-size: 12px;
+                                width: 30%;
+                                vertical-alignment: top;
+                            }
+                            Text {
+                                text: address;
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                                vertical-alignment: top;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Người đại diện:";
+                                color: #888888;
+                                font-size: 12px;
+                                width: 30%;
+                            }
+                            Text {
+                                text: representative;
+                                color: #FFFFFF;
+                                font-size: 12px;
+                                font-weight: 600;
+                            }
+                        }
+                        
+                        HorizontalLayout {
+                            Text {
+                                text: "Ngày hoạt động:";
+                                color: #888888;
+                                font-size: 12px;
+                                width: 30%;
+                            }
+                            Text {
+                                text: activity_date;
+                                color: #FFFFFF;
+                                font-size: 12px;
+                            }
+                        }
+                    }
+                    
+                    Text {
+                        text: "BẰNG CẤP, CHỨNG CHỈ, KHEN THƯỞNG, KỶ LUẬT";
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                    }
+                    
+                    Text {
+                        text: "Ngành nghề chính: " + business_field;
+                        color: #E0E0E0;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component SharedHolderList inherits Rectangle {
+    in property <[SharedHolder]> holders;
+    background: #181818;
+    
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        
+        // Header section
+        Rectangle {
+            height: 50px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            
+            HorizontalLayout {
+                padding: 16px;
+                
+                VerticalLayout {
+                    Text {
+                        text: "CỔ ĐÔNG LỚN";
+                        color: #FFFFFF;
+                        font-size: 18px;
+                        font-weight: 700;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+                
+                Rectangle {} // Spacer
+                
+                VerticalLayout {
+                    alignment: end;
+                    Text {
+                        text: @tr("{} cổ đông", holders.length);
+                        color: #00D4AA;
+                        font-size: 14px;
+                        font-weight: 600;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        
+        // Shareholders list with better spacing
+        if holders.length > 0: ListView {
+            for holder[index] in holders: Rectangle {
+                height: 70px; // Slightly taller for better proportions
+                background: Math.mod(index, 2) == 0 ? #2a2a2a : #252525; // Alternating colors
+                border-radius: 12px;
+                
+                HorizontalLayout {
+                    padding: 16px;
+                    spacing: 20px;
+                    
+                    // Left section - Shareholder info
+                    VerticalLayout {
+                        spacing: 4px;
+                        
+                        Text {
+                            text: holder.name;
+                            color: #FFFFFF;
+                            font-size: 15px;
+                            font-weight: 600;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                            wrap: word-wrap;
+                        }
+                        Text {
+                            text: "Cập nhật: " + holder.updated_at;
+                            color: #888888;
+                            font-size: 12px;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                    }
+                    
+                    Rectangle {} // Flexible spacer
+                    
+                    // Right section - Share information
+                    VerticalLayout {
+                        alignment: end;
+                        spacing: 4px;
+                        width: 150px; // Fixed width for alignment
+                        
+                        Text {
+                            text: @tr("{} cổ phiếu", Utils.parse_volume(holder.shares));
+                            color: #00D4AA;
+                            font-size: 14px;
+                            font-weight: 600;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            text: holder.percent.to-fixed(2) + "%";
+                            color: #FFA500;
+                            font-size: 13px;
+                            font-weight: 500;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Empty state with better styling
+        if holders.length == 0: Rectangle {
+            height: 200px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            
+            VerticalLayout {
+                alignment: center;
+                spacing: 12px;
+                
+                Text {
+                    text: "📊";
+                    color: #555555;
+                    font-size: 32px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Không có dữ liệu cổ đông";
+                    color: #888888;
+                    font-size: 16px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Dữ liệu sẽ được cập nhật khi có thông tin mới";
+                    color: #666666;
+                    font-size: 12px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+export component SharedHolderItem inherits Rectangle {
+    in property <SharedHolder> holder;
+    background: #2a2a2a;
+    border-radius: 8px;
+    height: 60px;
+    
+    HorizontalLayout {
+        padding: 12px;
+        spacing: 16px;
+        
+        // Shareholder name
+        VerticalLayout {
+            Text {
+                text: holder.name;
+                color: #FFFFFF;
+                font-size: 14px;
+                font-weight: 600;
+                horizontal-alignment: left;
+                vertical-alignment: center;
+            }
+            Text {
+                text: "Cập nhật: " + holder.updated_at;
+                color: #888888;
+                font-size: 11px;
+                horizontal-alignment: left;
+                vertical-alignment: center;
+            }
+        }
+        
+        Rectangle {} // Spacer
+        
+        // Share information
+        VerticalLayout {
+            alignment: end;
+            Text {
+                text: @tr("{} cổ phiếu", holder.shares);
+                color: #00D4AA;
+                font-size: 13px;
+                font-weight: 600;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+            Text {
+                text: holder.percent.to-fixed(2) + "%";
+                color: #FFA500;
+                font-size: 12px;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+export component CompanyOverview inherits Rectangle {
+    background: #181818;
+    in property <image> company-image;
+    in property <string> overview: "No overview available.";
+    
+    HorizontalLayout {
+        padding: 16px;
+        spacing: 16px;
+        
+        // Company image on the left
+        Rectangle {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            background: #2a2a2a;
+            
+            if company-image.width > 0: Image {
+                source: company-image;
+                width: 100%;
+                height: 100%;
+                image-fit: contain;
+            }
+            
+            if company-image.width == 0: Rectangle {
+                background: #404040;
+                border-radius: 8px;
+                Text {
+                    text: "LOGO";
+                    color: #888888;
+                    font-size: 12px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        
+        // Company overview text on the right
+        Rectangle {
+            clip: true;
+            background: #1a1a1a;
+            border-radius: 4px;
+            
+            ScrollView {
+                width: 100%;
+                height: 100%;
+                
+                VerticalLayout {
+                    padding: 8px;
+                    spacing: 0px;
+                    
+                    overview-text := Text {
+                        text: overview;
+                        color: #E0E0E0;
+                        font-size: 13px;
+                        font-weight: 400;
+                        wrap: word-wrap;
+                        vertical-alignment: top;
+                        horizontal-alignment: left;
+                        width: 100%;
+                    }
+                    
+                    // Add some bottom spacing
+                    Rectangle {
+                        height: 16px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component CompanyProfile inherits Rectangle {
+    background: #181818;
+
+    in-out property <StockData> stock_data;
+    in property <string> company_overview: "";
+    in property <[SharedHolder]> shared_holders;
+    in property <[Officer]> officers;
+    in property <[Subsidiary]> subsidiaries;
+    in property <[InsiderTransaction]> insider_transactions;
+
+    VerticalLayout {
+        padding: 8px;
+
+        StockHeader {
+            stock_data <=> root.stock_data;
+            border-radius: 10px;
+            height: 150px;
+        }
+        CompanyOverview {
+            min-height: 200px; // Reduced from 150px to 80px
+            // company-image: root.stock_data.company_logo; // Bind this when you have company logo data
+            overview: root.company_overview != "" ? root.company_overview : 
+                     "Tổng quan: Đang tải thông tin công ty...";
+        }
+        Rectangle {
+            height: 56px;
+            HorizontalLayout {
+                shared_holder := TextButton {
+                    text: "DANH SÁCH CỔ ĐÔNG";
+                    selected: true;
+                    clicked => {
+                        officers.selected = false;
+                        subsidiaries.selected = false;
+                        insider_transaction.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                officers := TextButton {
+                    text: "BAN LÃNH ĐẠO";
+                    clicked => {
+                        shared_holder.selected = false;
+                        subsidiaries.selected = false;
+                        insider_transaction.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                subsidiaries := TextButton {
+                    text: "CÔNG TY CON & LIÊN KẾT";
+                    clicked => {
+                        shared_holder.selected = false;
+                        officers.selected = false;
+                        insider_transaction.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                insider_transaction := TextButton {
+                    text: "GIAO DỊCH NỘI BỘ";
+                    clicked => {
+                        shared_holder.selected = false;
+                        officers.selected = false;
+                        subsidiaries.selected = false;
+                    }
+                }
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+            }
+        }
+        if officers.selected: OfficersList {
+            officers: root.officers;
+        }
+        if shared_holder.selected: SharedHolderList {
+            holders: root.shared_holders;
+        }
+        if subsidiaries.selected: SubsidiariesList {
+            subsidiaries: root.subsidiaries;
+        }
+        if insider_transaction.selected: InsiderTransactionsList {
+            transactions: root.insider_transactions;
+        }
+    }
+}

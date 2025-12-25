@@ -1,0 +1,59 @@
+import { IndexRow, Utils } from "../../data_type.slint";
+import { ListView } from "std-widgets.slint";
+
+export component OverallIndex inherits Rectangle {
+	background: #1a1a1a;
+	in property <[IndexRow]> data : [
+		{ name: "VNINDEX", score: 1314.46, change-percent: 0.51, change: 6.43, volume: 15005 },
+		{ name: "HNXIndex", score: 1314.46, change-percent: 0.51, change: 6.43, volume: 15005 },
+		{ name: "VNXALL", score: 1314.46, change-percent: 0.51, change: 6.43, volume: 15005 },
+		{ name: "VN30", score: 1314.46, change-percent: 0.51, change: 6.43, volume: 15005 },
+		{ name: "HNX30", score: 1314.46, change-percent: -0.51, change: -6.43, volume: 15005 },
+		{ name: "HNXUpcomIndex", score: 1314.46, change-percent: 0.51, change: 6.43, volume: 15005 },
+	];
+
+	VerticalLayout {
+        Rectangle {
+            height: 40px;
+            background: #2a2a2a;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+
+            Text {
+                text: "CHỈ SỐ THỊ TRƯỜNG";
+                font-size: 14px;
+                font-weight: 700;
+                color: white;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+		Rectangle {
+			height: 32px;
+			background: #333;
+			HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+				Text { width: 25%; text: "Chỉ Số"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+				Text { width: 25%; text: "Điểm Số"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+				Text { width: 25%; text: "Thay đổi"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+				Text { width: 25%; text: "Volume"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+			}
+		}
+		VerticalLayout {
+			ListView {
+				for row in data : Rectangle {
+                    height: 28px;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+						Text { width: 25%; text: row.name; font-size: 13px; font-weight: 600; color: white; horizontal-alignment: left; vertical-alignment: center; }
+						Text { width: 25%; text: row.score.to-fixed(2); font-size: 12px; font-weight: 600; color: row.change >= 0 ? #28A745 : #DC3545; horizontal-alignment: left; vertical-alignment: center; }
+						Text { width: 25%; text: row.change.to-fixed(2) + " (" + row.change-percent.to-fixed(2) + "%)"; font-size: 12px; font-weight: 600; color: row.change >= 0 ? #28A745 : #DC3545; horizontal-alignment: left; vertical-alignment: center; }
+						Text { width: 25%; text: Utils.parse_volume(row.volume) + " Tỷ"; font-size: 12px; font-weight: 600; color: white; horizontal-alignment: left; vertical-alignment: center; }
+					}
+				}
+			}
+		}
+	}
+}

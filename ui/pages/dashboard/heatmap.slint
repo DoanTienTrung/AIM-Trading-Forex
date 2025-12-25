@@ -1,0 +1,465 @@
+﻿import { HeaderData, HeatMapData } from "../../data_type.slint";
+
+// Individual stock tile component
+component StockTile inherits Rectangle {
+    in property <HeaderData> data;
+
+    background: data.color;
+    border-radius: 2px;
+    border-width: 1px;
+    
+    VerticalLayout {
+        alignment: center;
+        Text {
+            text: data.symbol;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+            horizontal-alignment: center;
+        }
+        Text {
+            text: data.percent-change.to-fixed(2) + "%";
+            font-size: 9px;
+            font-weight: 600;
+            color: white;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+// Sector header component
+component SectorHeader inherits Rectangle {
+    in property <string> sector_name: "";
+
+    height: 25px;
+    background: #2a2a2a;
+    
+    Text {
+        text: sector_name;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+component StockGroup inherits Rectangle {
+    in property <string> name;
+    in property <[HeaderData]> data;
+
+    VerticalLayout {
+        padding: 5px;
+
+        SectorHeader { sector_name: name; }
+        HorizontalLayout {
+            spacing: 2px;
+            VerticalLayout {
+                spacing: 2px;
+                HorizontalLayout {
+                    spacing: 2px;
+                    StockTile {data: data[0];}
+                    StockTile {data: data[1];}
+                    StockTile {data: data[2];}
+                }
+                HorizontalLayout {
+                    spacing: 2px;
+                    VerticalLayout {
+                        spacing: 2px;
+                        StockTile {data: data[3];}
+                        StockTile {data: data[4];}
+                        StockTile {data: data[5];}
+                    }
+                    VerticalLayout {
+                        spacing: 2px;
+                        HorizontalLayout {
+                            spacing: 2px;
+                            StockTile {data: data[6];}
+                            StockTile {data: data[7];}
+                            StockTile {data: data[8];}
+                        }
+                        HorizontalLayout {
+                            spacing: 2px;
+                            VerticalLayout {
+                                spacing: 2px;
+                                StockTile {data: data[9];}
+                                StockTile {data: data[10];}
+                                StockTile {data: data[11];}
+                            }
+                            VerticalLayout {
+                                spacing: 2px;
+                                HorizontalLayout {
+                                    spacing: 2px;
+                                    StockTile {data: data[12];}
+                                    StockTile {data: data[13];}
+                                    StockTile {data: data[14];}
+                                }
+                                HorizontalLayout {
+                                    spacing: 2px;
+                                    VerticalLayout {
+                                        spacing: 2px;
+                                        StockTile {data: data[15];}
+                                        StockTile {data: data[16];}
+                                        StockTile {data: data[17];}
+                                    }
+                                    VerticalLayout {
+                                        spacing: 2px;
+                                        HorizontalLayout {
+                                            spacing: 2px;
+                                            StockTile {data: data[18];}
+                                            StockTile {data: data[19];}
+                                            StockTile {data: data[20];}
+                                        }
+                                        HorizontalLayout {
+                                            spacing: 2px;
+                                            StockTile {data: data[21];}
+                                            StockTile {data: data[22];}
+                                            StockTile {data: data[23];}
+                                        }
+                                        HorizontalLayout {
+                                            spacing: 2px;
+                                            StockTile {data: data[24];}
+                                            StockTile {data: data[25];}
+                                            StockTile {data: data[26];}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component HeatMap inherits Rectangle {
+    background: #1a1a1a;
+    // Stub/mock data for each group
+    in property <[HeaderData]> finance_stub : [
+        { symbol: "FIN01", percent-change: -2.6, color: #DC3545 },
+        { symbol: "FIN02", percent-change: 2.7, color: #28A745 },
+        { symbol: "FIN03", percent-change: -2.96, color: #DC3545 },
+        { symbol: "FIN04", percent-change: -1.97, color: #DC3545 },
+        { symbol: "FIN05", percent-change: -1.88, color: #DC3545 },
+        { symbol: "FIN06", percent-change: -3.97, color: #DC3545 },
+        { symbol: "FIN07", percent-change: -3.69, color: #DC3545 },
+        { symbol: "FIN08", percent-change: -0.72, color: #DC3545 },
+        { symbol: "FIN09", percent-change: -1.63, color: #DC3545 },
+        { symbol: "FIN10", percent-change: 2.15, color: #28A745 },
+        { symbol: "FIN11", percent-change: -2.34, color: #DC3545 },
+        { symbol: "FIN12", percent-change: -3.17, color: #DC3545 },
+        { symbol: "FIN13", percent-change: -1.09, color: #DC3545 },
+        { symbol: "FIN14", percent-change: 1.23, color: #28A745 },
+        { symbol: "FIN15", percent-change: 0.5, color: #28A745 },
+        { symbol: "FIN16", percent-change: -0.8, color: #DC3545 },
+        { symbol: "FIN17", percent-change: 1.8, color: #28A745 },
+        { symbol: "FIN18", percent-change: -2.1, color: #DC3545 },
+        { symbol: "FIN19", percent-change: 0.9, color: #28A745 },
+        { symbol: "FIN20", percent-change: -1.5, color: #DC3545 },
+        { symbol: "FIN21", percent-change: 2.2, color: #28A745 },
+        { symbol: "FIN22", percent-change: -0.3, color: #DC3545 },
+        { symbol: "FIN23", percent-change: 1.7, color: #28A745 },
+        { symbol: "FIN24", percent-change: -2.8, color: #DC3545 },
+        { symbol: "FIN25", percent-change: 0.6, color: #28A745 },
+        { symbol: "FIN26", percent-change: -1.1, color: #DC3545 },
+        { symbol: "FIN27", percent-change: 2.8, color: #28A745 }
+    ];
+    in property <[HeaderData]> bds_stub : [
+        { symbol: "BDS01", percent-change: -2.16, color: #DC3545 },
+        { symbol: "BDS02", percent-change: -2.67, color: #DC3545 },
+        { symbol: "BDS03", percent-change: 1.22, color: #28A745 },
+        { symbol: "BDS04", percent-change: -1.45, color: #DC3545 },
+        { symbol: "BDS05", percent-change: -3.21, color: #DC3545 },
+        { symbol: "BDS06", percent-change: 2.1, color: #28A745 },
+        { symbol: "BDS07", percent-change: -0.8, color: #DC3545 },
+        { symbol: "BDS08", percent-change: 1.8, color: #28A745 },
+        { symbol: "BDS09", percent-change: -2.1, color: #DC3545 },
+        { symbol: "BDS10", percent-change: 0.9, color: #28A745 },
+        { symbol: "BDS11", percent-change: -1.5, color: #DC3545 },
+        { symbol: "BDS12", percent-change: 2.2, color: #28A745 },
+        { symbol: "BDS13", percent-change: -0.3, color: #DC3545 },
+        { symbol: "BDS14", percent-change: 1.7, color: #28A745 },
+        { symbol: "BDS15", percent-change: -2.8, color: #DC3545 },
+        { symbol: "BDS16", percent-change: 0.6, color: #28A745 },
+        { symbol: "BDS17", percent-change: -1.1, color: #DC3545 },
+        { symbol: "BDS18", percent-change: 2.5, color: #28A745 },
+        { symbol: "BDS19", percent-change: -0.7, color: #DC3545 },
+        { symbol: "BDS20", percent-change: 1.3, color: #28A745 },
+        { symbol: "BDS21", percent-change: -2.2, color: #DC3545 },
+        { symbol: "BDS22", percent-change: 0.8, color: #28A745 },
+        { symbol: "BDS23", percent-change: -1.9, color: #DC3545 },
+        { symbol: "BDS24", percent-change: 2.9, color: #28A745 },
+        { symbol: "BDS25", percent-change: -0.4, color: #DC3545 },
+        { symbol: "BDS26", percent-change: 1.1, color: #28A745 },
+        { symbol: "BDS27", percent-change: -2.3, color: #DC3545 }
+    ];
+    in property <[HeaderData]> industry_stub : [
+        { symbol: "IND01", percent-change: 3.64, color: #28A745 },
+        { symbol: "IND02", percent-change: 1.2, color: #28A745 },
+        { symbol: "IND03", percent-change: 1.8, color: #28A745 },
+        { symbol: "IND04", percent-change: -0.35, color: #DC3545 },
+        { symbol: "IND05", percent-change: -1.6, color: #DC3545 },
+        { symbol: "IND06", percent-change: -2.38, color: #DC3545 },
+        { symbol: "IND07", percent-change: 2.1, color: #28A745 },
+        { symbol: "IND08", percent-change: -0.8, color: #DC3545 },
+        { symbol: "IND09", percent-change: 1.8, color: #28A745 },
+        { symbol: "IND10", percent-change: -2.1, color: #DC3545 },
+        { symbol: "IND11", percent-change: 0.9, color: #28A745 },
+        { symbol: "IND12", percent-change: -1.5, color: #DC3545 },
+        { symbol: "IND13", percent-change: 2.2, color: #28A745 },
+        { symbol: "IND14", percent-change: -0.3, color: #DC3545 },
+        { symbol: "IND15", percent-change: 1.7, color: #28A745 },
+        { symbol: "IND16", percent-change: -2.8, color: #DC3545 },
+        { symbol: "IND17", percent-change: 0.6, color: #28A745 },
+        { symbol: "IND18", percent-change: -1.1, color: #DC3545 },
+        { symbol: "IND19", percent-change: 2.5, color: #28A745 },
+        { symbol: "IND20", percent-change: -0.7, color: #DC3545 },
+        { symbol: "IND21", percent-change: 1.3, color: #28A745 },
+        { symbol: "IND22", percent-change: -2.2, color: #DC3545 },
+        { symbol: "IND23", percent-change: 0.8, color: #28A745 },
+        { symbol: "IND24", percent-change: -1.9, color: #DC3545 },
+        { symbol: "IND25", percent-change: 2.9, color: #28A745 },
+        { symbol: "IND26", percent-change: -0.4, color: #DC3545 },
+        { symbol: "IND27", percent-change: 1.5, color: #28A745 }
+    ];
+    in property <[HeaderData]> material_stub : [
+        { symbol: "MAT01", percent-change: -2.91, color: #DC3545 },
+        { symbol: "MAT02", percent-change: -6.89, color: #17A2B8 },
+        { symbol: "MAT03", percent-change: 1.45, color: #28A745 },
+        { symbol: "MAT04", percent-change: -0.85, color: #DC3545 },
+        { symbol: "MAT05", percent-change: 2.1, color: #28A745 },
+        { symbol: "MAT06", percent-change: -0.8, color: #DC3545 },
+        { symbol: "MAT07", percent-change: 1.8, color: #28A745 },
+        { symbol: "MAT08", percent-change: -2.1, color: #DC3545 },
+        { symbol: "MAT09", percent-change: 0.9, color: #28A745 },
+        { symbol: "MAT10", percent-change: -1.5, color: #DC3545 },
+        { symbol: "MAT11", percent-change: 2.2, color: #28A745 },
+        { symbol: "MAT12", percent-change: -0.3, color: #DC3545 },
+        { symbol: "MAT13", percent-change: 1.7, color: #28A745 },
+        { symbol: "MAT14", percent-change: -2.8, color: #DC3545 },
+        { symbol: "MAT15", percent-change: 0.6, color: #28A745 },
+        { symbol: "MAT16", percent-change: -1.1, color: #DC3545 },
+        { symbol: "MAT17", percent-change: 2.5, color: #28A745 },
+        { symbol: "MAT18", percent-change: -0.7, color: #DC3545 },
+        { symbol: "MAT19", percent-change: 1.3, color: #28A745 },
+        { symbol: "MAT20", percent-change: -2.2, color: #DC3545 },
+        { symbol: "MAT21", percent-change: 0.8, color: #28A745 },
+        { symbol: "MAT22", percent-change: -1.9, color: #DC3545 },
+        { symbol: "MAT23", percent-change: 2.9, color: #28A745 },
+        { symbol: "MAT24", percent-change: -0.4, color: #DC3545 },
+        { symbol: "MAT25", percent-change: 1.1, color: #28A745 },
+        { symbol: "MAT26", percent-change: -2.0, color: #DC3545 },
+        { symbol: "MAT27", percent-change: 2.3, color: #28A745 }
+    ];
+    in property <[HeaderData]> basic_goods_stub : [
+        { symbol: "BAS01", percent-change: 0.8, color: #28A745 },
+        { symbol: "BAS02", percent-change: -1.2, color: #DC3545 },
+        { symbol: "BAS03", percent-change: 1.45, color: #28A745 },
+        { symbol: "BAS04", percent-change: -2.1, color: #DC3545 },
+        { symbol: "BAS05", percent-change: 0.9, color: #28A745 },
+        { symbol: "BAS06", percent-change: -1.5, color: #DC3545 },
+        { symbol: "BAS07", percent-change: 2.2, color: #28A745 },
+        { symbol: "BAS08", percent-change: -0.3, color: #DC3545 },
+        { symbol: "BAS09", percent-change: 1.7, color: #28A745 },
+        { symbol: "BAS10", percent-change: -2.8, color: #DC3545 },
+        { symbol: "BAS11", percent-change: 0.6, color: #28A745 },
+        { symbol: "BAS12", percent-change: -1.1, color: #DC3545 },
+        { symbol: "BAS13", percent-change: 2.5, color: #28A745 },
+        { symbol: "BAS14", percent-change: -0.7, color: #DC3545 },
+        { symbol: "BAS15", percent-change: 1.3, color: #28A745 },
+        { symbol: "BAS16", percent-change: -2.2, color: #DC3545 },
+        { symbol: "BAS17", percent-change: 0.8, color: #28A745 },
+        { symbol: "BAS18", percent-change: -1.9, color: #DC3545 },
+        { symbol: "BAS19", percent-change: 2.9, color: #28A745 },
+        { symbol: "BAS20", percent-change: -0.4, color: #DC3545 },
+        { symbol: "BAS21", percent-change: 1.1, color: #28A745 },
+        { symbol: "BAS22", percent-change: -2.0, color: #DC3545 },
+        { symbol: "BAS23", percent-change: 0.5, color: #28A745 },
+        { symbol: "BAS24", percent-change: -0.8, color: #DC3545 },
+        { symbol: "BAS25", percent-change: 1.8, color: #28A745 },
+        { symbol: "BAS26", percent-change: -2.1, color: #DC3545 },
+        { symbol: "BAS27", percent-change: 2.3, color: #28A745 }
+    ];
+    in property <[HeaderData]> advanced_goods_stub : [
+        { symbol: "ADV01", percent-change: 1.85, color: #28A745 },
+        { symbol: "ADV02", percent-change: -2.67, color: #DC3545 },
+        { symbol: "ADV03", percent-change: 0.45, color: #28A745 },
+        { symbol: "ADV04", percent-change: -1.2, color: #DC3545 },
+        { symbol: "ADV05", percent-change: 1.45, color: #28A745 },
+        { symbol: "ADV06", percent-change: -2.1, color: #DC3545 },
+        { symbol: "ADV07", percent-change: 0.9, color: #28A745 },
+        { symbol: "ADV08", percent-change: -1.5, color: #DC3545 },
+        { symbol: "ADV09", percent-change: 2.2, color: #28A745 },
+        { symbol: "ADV10", percent-change: -0.3, color: #DC3545 },
+        { symbol: "ADV11", percent-change: 1.7, color: #28A745 },
+        { symbol: "ADV12", percent-change: -2.8, color: #DC3545 },
+        { symbol: "ADV13", percent-change: 0.6, color: #28A745 },
+        { symbol: "ADV14", percent-change: -1.1, color: #DC3545 },
+        { symbol: "ADV15", percent-change: 2.5, color: #28A745 },
+        { symbol: "ADV16", percent-change: -0.7, color: #DC3545 },
+        { symbol: "ADV17", percent-change: 1.3, color: #28A745 },
+        { symbol: "ADV18", percent-change: -2.2, color: #DC3545 },
+        { symbol: "ADV19", percent-change: 0.8, color: #28A745 },
+        { symbol: "ADV20", percent-change: -1.9, color: #DC3545 },
+        { symbol: "ADV21", percent-change: 2.9, color: #28A745 },
+        { symbol: "ADV22", percent-change: -0.4, color: #DC3545 },
+        { symbol: "ADV23", percent-change: 1.1, color: #28A745 },
+        { symbol: "ADV24", percent-change: -2.0, color: #DC3545 },
+        { symbol: "ADV25", percent-change: 0.5, color: #28A745 },
+        { symbol: "ADV26", percent-change: -0.8, color: #DC3545 },
+        { symbol: "ADV27", percent-change: 2.3, color: #28A745 }
+    ];
+    in property <[HeaderData]> tech_stub : [
+        { symbol: "TEC01", percent-change: -3.2, color: #DC3545 },
+        { symbol: "TEC02", percent-change: 1.1, color: #28A745 },
+        { symbol: "TEC03", percent-change: -0.5, color: #DC3545 },
+        { symbol: "TEC04", percent-change: 2.3, color: #28A745 },
+        { symbol: "TEC05", percent-change: -1.7, color: #DC3545 },
+        { symbol: "TEC06", percent-change: 0.8, color: #28A745 },
+        { symbol: "TEC07", percent-change: -2.2, color: #DC3545 },
+        { symbol: "TEC08", percent-change: 1.5, color: #28A745 },
+        { symbol: "TEC09", percent-change: -0.9, color: #DC3545 },
+        { symbol: "TEC10", percent-change: 2.0, color: #28A745 },
+        { symbol: "TEC11", percent-change: -1.3, color: #DC3545 },
+        { symbol: "TEC12", percent-change: 0.4, color: #28A745 },
+        { symbol: "TEC13", percent-change: -2.6, color: #DC3545 },
+        { symbol: "TEC14", percent-change: 1.9, color: #28A745 },
+        { symbol: "TEC15", percent-change: -0.2, color: #DC3545 },
+        { symbol: "TEC16", percent-change: 2.7, color: #28A745 },
+        { symbol: "TEC17", percent-change: -1.8, color: #DC3545 },
+        { symbol: "TEC18", percent-change: 0.7, color: #28A745 },
+        { symbol: "TEC19", percent-change: -2.4, color: #DC3545 },
+        { symbol: "TEC20", percent-change: 1.2, color: #28A745 },
+        { symbol: "TEC21", percent-change: -0.6, color: #DC3545 },
+        { symbol: "TEC22", percent-change: 2.4, color: #28A745 },
+        { symbol: "TEC23", percent-change: -1.5, color: #DC3545 },
+        { symbol: "TEC24", percent-change: 0.9, color: #28A745 },
+        { symbol: "TEC25", percent-change: -2.1, color: #DC3545 },
+        { symbol: "TEC26", percent-change: 1.6, color: #28A745 },
+        { symbol: "TEC27", percent-change: -0.7, color: #DC3545 }
+    ];
+    in property <[HeaderData]> facility_stub : [
+        { symbol: "FAC01", percent-change: 0.95, color: #28A745 },
+        { symbol: "FAC02", percent-change: -1.25, color: #DC3545 },
+        { symbol: "FAC03", percent-change: 2.1, color: #28A745 },
+        { symbol: "FAC04", percent-change: -0.8, color: #DC3545 },
+        { symbol: "FAC05", percent-change: 1.8, color: #28A745 },
+        { symbol: "FAC06", percent-change: -2.1, color: #DC3545 },
+        { symbol: "FAC07", percent-change: 0.9, color: #28A745 },
+        { symbol: "FAC08", percent-change: -1.5, color: #DC3545 },
+        { symbol: "FAC09", percent-change: 2.2, color: #28A745 },
+        { symbol: "FAC10", percent-change: -0.3, color: #DC3545 },
+        { symbol: "FAC11", percent-change: 1.7, color: #28A745 },
+        { symbol: "FAC12", percent-change: -2.8, color: #DC3545 },
+        { symbol: "FAC13", percent-change: 0.6, color: #28A745 },
+        { symbol: "FAC14", percent-change: -1.1, color: #DC3545 },
+        { symbol: "FAC15", percent-change: 2.5, color: #28A745 },
+        { symbol: "FAC16", percent-change: -0.7, color: #DC3545 },
+        { symbol: "FAC17", percent-change: 1.3, color: #28A745 },
+        { symbol: "FAC18", percent-change: -2.2, color: #DC3545 },
+        { symbol: "FAC19", percent-change: 0.8, color: #28A745 },
+        { symbol: "FAC20", percent-change: -1.9, color: #DC3545 },
+        { symbol: "FAC21", percent-change: 2.9, color: #28A745 },
+        { symbol: "FAC22", percent-change: -0.4, color: #DC3545 },
+        { symbol: "FAC23", percent-change: 1.1, color: #28A745 },
+        { symbol: "FAC24", percent-change: -2.0, color: #DC3545 },
+        { symbol: "FAC25", percent-change: 0.5, color: #28A745 },
+        { symbol: "FAC26", percent-change: -0.8, color: #DC3545 },
+        { symbol: "FAC27", percent-change: 2.3, color: #28A745 }
+    ];
+    in property <[HeaderData]> energy_stub : [
+        { symbol: "ENE01", percent-change: 1.45, color: #28A745 },
+        { symbol: "ENE02", percent-change: 0.85, color: #28A745 },
+        { symbol: "ENE03", percent-change: -1.95, color: #DC3545 },
+        { symbol: "ENE04", percent-change: 2.1, color: #28A745 },
+        { symbol: "ENE05", percent-change: -0.8, color: #DC3545 },
+        { symbol: "ENE06", percent-change: 1.8, color: #28A745 },
+        { symbol: "ENE07", percent-change: -2.1, color: #DC3545 },
+        { symbol: "ENE08", percent-change: 0.9, color: #28A745 },
+        { symbol: "ENE09", percent-change: -1.5, color: #DC3545 },
+        { symbol: "ENE10", percent-change: 2.2, color: #28A745 },
+        { symbol: "ENE11", percent-change: -0.3, color: #DC3545 },
+        { symbol: "ENE12", percent-change: 1.7, color: #28A745 },
+        { symbol: "ENE13", percent-change: -2.8, color: #DC3545 },
+        { symbol: "ENE14", percent-change: 0.6, color: #28A745 },
+        { symbol: "ENE15", percent-change: -1.1, color: #DC3545 },
+        { symbol: "ENE16", percent-change: 2.5, color: #28A745 },
+        { symbol: "ENE17", percent-change: -0.7, color: #DC3545 },
+        { symbol: "ENE18", percent-change: 1.3, color: #28A745 },
+        { symbol: "ENE19", percent-change: -2.2, color: #DC3545 },
+        { symbol: "ENE20", percent-change: 0.8, color: #28A745 },
+        { symbol: "ENE21", percent-change: -1.9, color: #DC3545 },
+        { symbol: "ENE22", percent-change: 2.9, color: #28A745 },
+        { symbol: "ENE23", percent-change: -0.4, color: #DC3545 },
+        { symbol: "ENE24", percent-change: 1.1, color: #28A745 },
+        { symbol: "ENE25", percent-change: -2.0, color: #DC3545 },
+        { symbol: "ENE26", percent-change: 0.5, color: #28A745 },
+        { symbol: "ENE27", percent-change: 2.3, color: #28A745 }
+    ];
+
+    in property <HeatMapData> data: {
+        finance_data: finance_stub,
+        bds_data: bds_stub,
+        industry_data: industry_stub,
+        material_data: material_stub,
+        basic_goods_data: basic_goods_stub,
+        advanced_goods_data: advanced_goods_stub,
+        tech_data: tech_stub,
+        facility_data: facility_stub,
+        energy_data: energy_stub
+    };
+
+    HorizontalLayout {
+        StockGroup {
+            name: "Tài chính";
+            data: data.finance_data;
+        }
+        VerticalLayout {
+            HorizontalLayout {
+                StockGroup {
+                    name: "Bất động sản";
+                    data: data.bds_data;
+                }
+                StockGroup {
+                    name: "Công nghiệp";
+                    data: data.industry_data;
+                }
+            }
+            HorizontalLayout {
+                VerticalLayout {
+                    StockGroup {
+                        name: "Nguyên vật liệu";
+                        data: data.material_data;
+                    }
+                    StockGroup {
+                        name: "Tiêu dùng thiết yếu";
+                        data: data.basic_goods_data;
+                    }
+                }
+                VerticalLayout {
+                    HorizontalLayout {
+                        StockGroup {
+                            name: "Tiêu dùng không thiết yếu";
+                            data: data.advanced_goods_data;
+                        }
+                        StockGroup {
+                            name: "Công nghệ thông tin";
+                            data: data.tech_data;
+                        }
+                    }
+                    HorizontalLayout {
+                        StockGroup {
+                            name: "Tiện ích";
+                            data: data.facility_data;
+                        }
+                        StockGroup {
+                            name: "Năng lượng";
+                            data: data.energy_data;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

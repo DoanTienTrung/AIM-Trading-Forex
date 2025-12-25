@@ -1,0 +1,663 @@
+import { ListView, ScrollView, Button, Slider, ProgressIndicator } from "std-widgets.slint";
+import { StrategyReport, StockReport } from "../../data_type.slint";
+
+enum TravelDirection { left, right }
+export component SpriteSheet {
+
+    in property <image> source;
+    in property <int> frames-wide;
+    in property <int> frames-high;
+    in property <int> total-frames: frames-wide * frames-high;
+    in-out property <bool> playing: false;
+    in property <duration> duration;
+    in property <int> frame: 0;
+
+    property <int> current-frame: playing ? (total-frames * (animation-tick() / duration)).mod(total-frames) : frame.mod(total-frames).abs();
+    width: sheet.width;
+    height: sheet.height;
+
+    sheet :=Image {
+        source: root.source;
+        source-clip-width: self.source.width / root.frames-wide;
+        source-clip-height: self.source.height / root.frames-high;
+        source-clip-x: self.source-clip-width * current-frame.mod(root.frames-wide);
+        source-clip-y: self.source-clip-height * (current-frame / root.frames-wide).floor();
+        // width: self.source.width / root.frames-wide * 1px;
+        // height: self.source.height / root.frames-high * 1px;
+        // ✅ giảm còn 1/2 kích thước hiển thị
+        width: (self.source.width / root.frames-wide) * 0.3px;
+        height: (self.source.height / root.frames-high) * 0.3px;
+    }
+    
+}
+
+export component LoadingOverlay inherits Rectangle {
+    in property <bool> visible_overlay: false;
+
+    // 🌫 Nền mờ phủ toàn màn hình
+    background: #00000033;
+    visible: visible_overlay;
+    z: 999;
+    preferred-width: 100%;
+    preferred-height: 100%;
+
+    property <TravelDirection> travel-direction: TravelDirection.right;
+
+    ball :=SpriteSheet {
+        property <int> frameTick: animation-tick() / 16ms;
+        function updateX(){
+
+            if ball.x > root.width - ball.width {
+                travel-direction = TravelDirection.left;
+                ball.x = 0;
+            }
+            if ball.x <= 0 {
+                travel-direction = TravelDirection.right;
+                ball.x = root.width;
+            }
+        }
+
+        source: @image-url("../../image/aim-logo-sprite.png");
+        frames-wide: 5;
+        frames-high: 5;
+        total-frames: 21;
+        x: 0px;
+        animate x { duration: 3s; }
+        y: (-400px * abs(sin(360deg * animation-tick() / 3s))) + parent.height - ball.height;
+
+        changed x => { updateX() }
+
+        changed frameTick => {
+            if travel-direction == TravelDirection.left {
+                ball.frame = ball.frame + 1;
+            } else {
+                ball.frame = ball.frame - 1;
+            }
+         }
+
+        // Update X on start or the ball will be stuck at 0 as no 'changed x' happens
+        init => { updateX() }
+    }  
+
+    // // 🎬 Layout trung tâm
+    // VerticalLayout {
+    //     alignment: center;
+    //     spacing: 16px;
+
+        // 🌀 Hiệu ứng boing ball (sprite animation)
+        // SpriteSheet {
+        //     source: @image-url("../../image/aim-logo.png");
+        //     frames-wide: 5;
+        //     frames-high: 5;
+        //     total-frames: 21;
+        //     playing: true;
+        //     duration: 800ms;   // tốc độ xoay
+        //     width: 64px;
+        //     height: 64px;
+        // }
+
+         
+
+        // // 💬 Text thông báo
+        // Text {
+        //     text: "Đang tải dữ liệu...";
+        //     color: #fff;
+        //     font-size: 18px;
+        //     font-weight: 500;
+        //     horizontal-alignment: center;
+        // }
+    // }
+}
+export component PDFView inherits Rectangle {
+    background: #000000;
+    // 🧩 Dữ liệu
+    in property <[image]> pdf_pages;
+    property <int> current_page: 0;
+    property <float> zoom_factor: 1.0;
+    in property <bool> is_loading: false;
+    in-out property <string> report_title: "Báo cáo tài chính";
+
+    changed pdf_pages => {
+        current_page = 0;
+        zoom_factor = 1.0;
+    }
+
+    VerticalLayout {
+        spacing: 4px;
+        padding: 4px;
+        Rectangle {
+            height: 5%;
+            Text {
+            text: report_title;
+            color: white;
+            font-size: 18px;
+            horizontal-alignment: center;
+        }
+        }
+        // 📄 Vùng hiển thị PDF
+        Rectangle {
+            width: 100%;
+            height: 80%;
+            border-width: 1px;
+            border-color: #ccc;
+
+            // Overlay loading
+            LoadingOverlay {
+                visible_overlay: is_loading;
+                // width: parent.width;
+                // height: parent.height;
+            }
+
+            // 🖼️ PDF hiển thị
+            Flickable {
+                visible: !is_loading;
+                width: root.width;
+                height: parent.height;
+                
+                // 🔧 Vùng chứa nội dung (có kích thước phụ thuộc zoom)
+                VerticalLayout {
+                    preferred-width: parent.width * zoom_factor;
+                    preferred-height: pdf_pages.length > 0 ? parent.width * zoom_factor * (pdf_pages[current_page].height / pdf_pages[current_page].width) : 0px;
+                    // clip: true; // quan trọng: không để overflow gây glitch
+                    // => giúp Flickable biết kích thước vùng cuộn
+
+                    Image {
+                        source: pdf_pages.length > 0 ? pdf_pages[current_page] : @image-url("");
+                        width: parent.preferred-width;
+                        height: parent.preferred-height;
+                        image-fit: contain;
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 5%;
+            Text {
+            text: "Page " + (current_page + 1) + " / " + pdf_pages.length;
+            color: white;
+            font-size: 14px;
+            horizontal-alignment: center;
+        }
+        }
+        
+
+        // 🔘 Nút điều hướng & zoom
+        HorizontalLayout {
+            height: 10%;
+            spacing: 10px;
+            alignment: center;
+            // Đảm bảo các button có kích thước bằng nhau
+            property <length> button_width: 100px;
+            property <length> button_height: 40px;
+
+            Button {
+                text: "Prev";
+                enabled: !is_loading;
+                width: button_width;
+                height: button_height;
+                clicked => { if current_page > 0 { current_page -= 1; } }
+            }
+
+            Button {
+                text: "Next";
+                enabled: !is_loading;
+                width: button_width;
+                height: button_height;
+                clicked => { if current_page < pdf_pages.length - 1 { current_page += 1; } }
+            }
+
+            Button {
+                text: "Zoom In";
+                enabled: !is_loading;
+                width: button_width;
+                height: button_height;
+                clicked => { zoom_factor *= 1.2; }
+            }
+
+            Button {
+                text: "Zoom Out";
+                enabled: !is_loading;
+                width: button_width;
+                height: button_height;
+                clicked => { zoom_factor /= 1.2; }
+            }
+        }
+    }
+}
+
+
+
+
+
+// -------------------------
+// BẢNG CHIẾN LƯỢC (Strategy)
+// -------------------------
+export component StrategyReportTable inherits Rectangle {
+    in property <[StrategyReport]> strategy_list: [];
+    in property <length> row_height: 32px;
+
+    property <length> header_height: 40px;
+    height: header_height + strategy_list.length * row_height + 60px;
+    width: 800px;
+    background: #101010;
+
+    VerticalLayout {
+        spacing: 0;
+        padding: 0;
+
+            // --- Title ---
+        Rectangle {
+            width: 100%;
+            height: 40px;
+            background: #181818;
+
+            VerticalLayout {
+                alignment: center; // canh giữa dọc
+                padding: 8px;
+                Text {
+                    text: "PHÂN TÍCH CHIẾN LƯỢC AIM";
+                    color: white;
+                    font-size: 18px;
+                    font-weight: 700;
+                    // horizontal-alignment: center;
+                }
+        }
+
+        Rectangle {
+            height: 1px;
+            width: 100%;
+            background: #303030;
+            y: parent.height - self.height;
+        }
+    }
+
+        // --- Header ---
+        Rectangle {
+            width: 100%;
+            height: root.header_height;
+            background: #121212;
+
+            // VerticalLayout {
+            //     Rectangle { // line dưới
+            //         height: 1px; width: parent.width;
+            //         background: #303030;
+            //     }
+            // }
+
+            HorizontalLayout {
+                spacing: 0;
+
+                // Cột 1
+                Rectangle {
+                    width: 80px;
+                    Text { text: "Mã CP"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; } // line chia cột
+                }
+
+                // Cột 2
+                Rectangle {
+                    // width: 300px;
+                    Text { text: "Tên Công Ty"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 3
+                Rectangle {
+                    width: 150px;
+                    Text { text: "Trạng thái"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 4
+                Rectangle {
+                    width: 120px;
+                    Text { text: "Ngày"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                }
+            }
+            // Line dưới header
+            Rectangle { height: 1px; width: parent.width; y: parent.height - self.height; background: #303030; }
+        }
+
+        // --- Nội dung ---
+        ListView {
+            width: 100%; // or use a fixed value like 800px if needed
+            height: strategy_list.length * row_height;
+
+            for item[i] in strategy_list: Rectangle {
+                height: row_height;
+                background: Math.mod(i, 2) == 0 ? #181818 : #151515;
+
+                // line ngang
+                Rectangle { height: 1px; width: parent.width; y: parent.height - self.height; background: #252525; }
+
+                HorizontalLayout {
+                    spacing: 0;
+
+                    // Cột 1
+                    Rectangle {
+                        width: 80px;
+                        Text { text: item.code; color: white; vertical-alignment: center; horizontal-alignment: center; }
+                        Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                    }
+
+                    // Cột 2
+                    Rectangle {
+                        // width: 300px;
+                        
+                        VerticalLayout {
+                            alignment: center;
+                            padding-left: 8px;
+                            Text { text: item.name; color: white; vertical-alignment: center; horizontal-alignment: left; wrap: no-wrap; overflow: elide;}
+                        }
+                        Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                    }
+
+                    // Cột 3
+                    Rectangle {
+                        width: 150px;
+                        Text { text: item.status; color: white; vertical-alignment: center; horizontal-alignment: center; }
+                        Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                    }
+
+                    // Cột 4
+                    Rectangle {
+                        width: 120px;
+                        Text { text: item.date; color: white; vertical-alignment: center; horizontal-alignment: center; }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+// -------------------------    
+// BẢNG BÁO CÁO CỔ PHIẾU (Report)
+// -------------------------
+export component ReportTable inherits Rectangle {
+    in property <[StockReport]> report_list: [];
+    in property <length> row_height: 32px;
+    callback report_selected(string);
+    in-out property <string> selected_report_id: "";
+    callback report_selected_title(string);
+
+    property <length> header_height: 40px;
+    width: 900px;
+    height: header_height + report_list.length * row_height + 60px;
+    background: #101010;
+
+    VerticalLayout {
+        width: 100%;
+        height: 100%;
+        spacing: 0;
+        padding: 0;
+
+        // --- Tiêu đề ---
+        Rectangle {
+            width: 100%;
+            height: 40px;
+            background: #181818;
+
+            VerticalLayout {
+                alignment: center; // canh giữa dọc
+                padding: 8px;
+                Text {
+                    text: "BÁO CÁO TÀI CHÍNH DOANH NGHIỆP";
+                    color: white;
+                    font-size: 18px;
+                    font-weight: 700;
+                    // horizontal-alignment: center;
+                }
+            }
+
+            // Line dưới tiêu đề
+            Rectangle { height: 1px; width: parent.width; y: parent.height - self.height; background: #303030; }
+        }
+
+        // --- Header ---
+        Rectangle {
+            width: 100%;
+            height: root.header_height;
+            background: #121212;
+
+            HorizontalLayout {
+                spacing: 0;
+
+                // Cột 1: Mã CP
+                Rectangle {
+                    width: 60px;
+                    Text { text: "Mã CP"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 2: Tên
+                Rectangle {
+                    // width: 300px;
+                    Text { text: "Tên báo cáo"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center;  }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 3: Khuyến nghị
+                Rectangle {
+                    width: 100px;
+                    Text { text: "Khuyến nghị"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 4: Target
+                Rectangle {
+                    width: 80px;
+                    Text { text: "Target"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 5: % Upside
+                Rectangle {
+                    width: 80px;
+                    Text { text: "% Upside"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                    Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #303030; }
+                }
+
+                // Cột 6: Ngày xuất bản
+                Rectangle {
+                    width: 120px;
+                    Text { text: "Ngày"; color: #fff; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                }
+            }
+
+            // Line dưới header
+            Rectangle { height: 1px; width: parent.width; y: parent.height - self.height; background: #303030; }
+        }
+        Flickable {
+        width: 100%;
+        height: report_list.length * row_height;
+            // --- Nội dung ---
+            ListView {
+                width: 100%;
+                height: report_list.length * row_height;
+
+                for item[i] in report_list: Rectangle {
+                    height: row_height;
+                    // background: Math.mod(i, 2) == 0 ? #181818 : #151515;
+
+                    // --- Highlight nếu là dòng được chọn ---
+                    background: item.report_id == root.selected_report_id
+                        ? #a7a7a7  // màu highlight
+                        : (Math.mod(i, 2) == 0 ? #181818 : #151515);
+
+                    animate background { duration: 150ms; easing: ease-in-out; }
+
+                    // --- Vùng nhấn ---
+                    TouchArea {
+                        clicked => {
+                            debug("✅[LOI] Clicked report:", item.report_id);
+                            if root.selected_report_id == item.report_id {
+                                return;
+                            }
+                            root.selected_report_id = item.report_id;
+                            root.report_selected(item.report_id);
+                            if item.code == "N/A" {
+                                root.report_selected_title("Báo cáo: " + item.name);
+                            } else {
+                                root.report_selected_title("Báo cáo: " + item.name + " (" + item.code + ")");
+                            }
+                        }
+                    }
+
+                    // Line ngang
+                    Rectangle { height: 1px; width: parent.width; y: parent.height - self.height; background: #252525; }
+
+                    HorizontalLayout {
+                        spacing: 0;
+
+                        // Cột 1
+                        Rectangle {
+                            width: 60px;
+                            Text { text: item.code; color: white; font-weight: 600; vertical-alignment: center; horizontal-alignment: center; }
+                            Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                        }
+
+                        // Cột 2
+                        Rectangle {
+                            // width: 300px;
+                            VerticalLayout {
+                                alignment: center;
+                                padding-left: 8px;
+                                Text { text: item.name; color: white; vertical-alignment: center; horizontal-alignment: left; wrap: no-wrap; overflow: elide;}
+                            }
+                            
+                            Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                        }
+
+                        // Cột 3
+                        Rectangle {
+                            width: 100px;
+                            Text {
+                                text: item.recommend;
+                                color: item.recommend == "Mua" ? #4caf50 :
+                                    item.recommend == "Bán" ? #f44336 : #ffeb3b;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                                font-weight: 600;
+                            }
+                            Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                        }
+
+                        // Cột 4
+                        Rectangle {
+                            width: 80px;
+                            Text { text: item.report_id; color: #fff; horizontal-alignment: center; vertical-alignment: center; }
+                            Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                        }
+
+                        // Cột 5
+                        Rectangle {
+                            width: 80px;
+                            Text { text: item.upside; color: #fff; horizontal-alignment: center; vertical-alignment: center; }
+                            Rectangle { width: 1px; height: parent.height; x: parent.width - 1px; background: #252525; }
+                        }
+
+                        // Cột 6
+                        Rectangle {
+                            width: 120px;
+                            Text { text: item.date; color: #ccc; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                }
+                
+            }
+        }
+    }
+}
+
+
+
+// -------------------------
+// DASHBOARD CHUNG
+// -------------------------
+export component FinanceReport inherits Rectangle {
+    background: #000000;
+
+    // --- Dữ liệu từ backend
+    in property <[StockReport]> report_list;
+    in property <[StrategyReport]> strategy_list;
+    in property <[image]> pdf_pages;
+    callback report_selected(string);
+    in-out property <string> selected_report_id: "";
+    in property <bool> is_loading: false;
+    callback report_selected_title(string);
+    in-out property <string> selected_title;
+
+    property <[StrategyReport]> default_strategy_list: [
+        { code: "VNM", name: "Vinamilk", status: "Mua", date: "2025-10-20", report_id: "123" },
+        { code: "HPG", name: "Hòa Phát", status: "Nắm giữ", date: "2025-10-21", report_id: "124" },
+        { code: "FPT", name: "FPT Corp", status: "Quan sát", date: "2025-10-22", report_id: "125" },
+    ];
+
+    private property <[StockReport]> default_report_list: [
+        { code: "GEX", name: "Triển vọng thuận lợi nhờ mảng xây lắp và bất động sản", recommend: "Mua", target: "28.5", upside: "12%", date: "20/10/2025", report_id: "125"  },
+        { code: "DDV", name: "Xuất khẩu vẫn là động lực tăng trưởng chính, tiêu dùng nội địa suy yếu", recommend: "Mua", target: "22.0", upside: "10%", date: "18/10/2025", report_id: "121235"  },
+    ];
+
+
+    HorizontalLayout {
+        width: parent.width;
+        height: parent.height;
+        spacing: 10px;
+        padding: 10px;
+
+        // 🔹 Layout trái: chiếm 60% chiều ngang parent
+        VerticalLayout {
+            width: 60%;
+            height: 100%;
+            spacing: 10px;
+
+            // ReportTable chiếm 60% chiều cao của layout trái
+            Rectangle {
+                width: 100%;
+                height: 60%;
+                ReportTable {
+                        report_list: root.report_list.length > 0 ? root.report_list : root.default_report_list;
+                        width: 100%;
+                        height: 100%;
+                    report_selected(report_id) => {
+                        debug("✅[APP] report_selected triggered with", report_id);
+                        root.report_selected(report_id);
+                    }
+                    report_selected_title(name) => {
+                        root.selected_title = name;
+                    }
+                }
+            }
+
+            // StrategyReportTable chiếm 40% chiều cao của layout trái
+            Rectangle {
+                width: 100%;
+                height: 40%;
+                StrategyReportTable {
+                    strategy_list: root.strategy_list.length > 0 ? root.strategy_list : root.default_strategy_list;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+        }
+
+        // 🔹 Layout phải: PDFView chiếm 40% chiều ngang parent
+        Rectangle {
+            width: 39%;
+            height: 100%;
+            background: #48be83;
+            PDFView {
+                pdf_pages: root.pdf_pages;
+                is_loading: root.is_loading;
+                report_title: root.selected_title;
+            }
+        }
+        
+
+    }
+}
+
+

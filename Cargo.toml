@@ -1,0 +1,37 @@
+[package]
+name = "aim-trading-pro"
+version = "1.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+slint = { version = "1.13.1", default-features = false, features = ["backend-winit", "compat-1-2", "renderer-winit-femtovg"] }
+femtovg = "0.17.0"
+chrono = { version = "0.4.40", features = ["serde"] }
+plotters = "0.3.7"
+reqwest = { version = "0.12.5", features = ["blocking", "json"] }
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+log = "0.4.22"
+env_logger = "0.11.8"
+dirs-next = "2.0.0"
+lazy_static = "1.5.0"
+aim-data = { path = "aim_data" }
+aim-chart = { path = "aim_chart" }
+pdfium-render = "0.8.36"
+uuid = { version = "1", features = ["v4"] }
+anyhow = "1.0.100"
+rand = "0.9.2"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.9", features = ["winuser"] }
+
+[build-dependencies]
+slint-build = "1.13.1"
+winresource = "0.1.20"
+
+[package.metadata.winresource]
+OriginalFilename = "aim-trading-pro_0.1.2.exe"
+LegalCopyright = "AIM Copyright © 2025"

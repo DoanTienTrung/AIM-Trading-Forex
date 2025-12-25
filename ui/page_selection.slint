@@ -1,0 +1,36 @@
+
+export component selectPage inherits Rectangle {
+    in-out property <image> image: @image-url("./image/aim-logo.png");
+    in-out property <bool> is_selected;
+    callback selected();
+    width: 48px;
+    height: 48px;
+    states [
+        pressed when touch-area.pressed : {
+            background: #54575e;
+        }
+
+        hover when touch-area.has-hover: {
+            background: #54575e.darker(0.4);
+        }
+    ]
+
+    Image {
+        source: image;
+        image-fit: fill;
+        width: parent.width / 2;
+        height: parent.height / 2;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        colorize: is_selected? #00BDDD:#999999;
+    }
+
+    touch-area := TouchArea {
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                is_selected = true;
+                selected();
+            }
+        }
+    }
+}

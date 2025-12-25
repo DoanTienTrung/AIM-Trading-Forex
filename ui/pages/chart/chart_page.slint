@@ -1,0 +1,417 @@
+import { VerticalBox, HorizontalBox, Button, LineEdit, ComboBox, ListView} from "std-widgets.slint";
+import { AimChart, UiData, MouseType } from "chart.slint";
+import { ChartIcon } from "../../widgets/func_icon.slint";
+import { StockCard, AddStockWindow } from "stock_card.slint";
+import { TextButton, AimSearchBar } from "../../widgets/aim_widget.slint";
+import { ShortType, OrderList, StockData, StockGroup, StockReport, StrategyReport, CorrelationRow, ReturnRowData, RsiData, CoinData, MaData } from "../../data_type.slint";
+import { TickerList } from "ticker_list.slint";
+import { TestFinance } from "finance.slint";
+import { FinanceList, SharedHolder, Subsidiary, Officer, InsiderTransaction } from "finance_type.slint";
+import { CompanyOverview, CompanyProfile } from "company_profile.slint";
+
+export component ChartPage inherits Rectangle {
+    in-out property <UiData> ui_data: {
+        is_release: true,
+        color: #ff0000,
+    };
+    in-out property <bool> is_chart_in_update: false;
+    in-out property <bool> is_list_in_update: false;
+    in-out property <image> image;
+    in property <[StockGroup]> stock_groups;
+    in property <[OrderList]> order_list;
+    in-out property <StockData> current_stock;
+    in-out property <length> color_picker_x: 0px;
+    in-out property <length> color_picker_y: 0px;
+    in-out property <FinanceList> overview_data;
+    in-out property <FinanceList> balance_sheet;
+    in-out property <FinanceList> income_statement;
+    in-out property <FinanceList> cash_flow_tt_statement;
+    in-out property <FinanceList> cash_flow_gt_statement;
+    in-out property <[SharedHolder]> shared_holders;
+    in-out property <[Subsidiary]> subsidiaries;
+    in-out property <[Officer]> officers;
+    in-out property <[InsiderTransaction]> insider_transactions;
+    in-out property <string> company_overview: "";
+    in property <bool> is_loading: false;
+    property <bool> is_hide_stock_list: false;
+
+    callback show_add_window();
+    callback add_stock(string, string);
+    callback remove_stock(string, string);
+    callback toggle_group(int);
+    callback switch_list(string);
+    callback sort_stocks(ShortType);
+
+    public function get_chart_width() -> length {
+        return aim-chart.width;
+    }
+    public function get_chart_height() -> length {
+        return aim-chart.height;
+    }
+
+    HorizontalLayout {
+        VerticalLayout {
+            
+            Rectangle {
+                background: #19191C;
+                border-bottom-left-radius: 10px;
+                border-bottom-right-radius: 10px;
+                height: 56px;
+                HorizontalLayout {
+                    Rectangle {
+                        width: 24px;
+                    }
+                    text_chart := TextButton {
+                        width: 200px;
+                        text: "Biểu Đồ";
+                        selected: true;
+                        clicked => {
+                            text_finance.selected = false;
+                            company_profile.selected = false;
+                            is_hide_stock_list = false;
+                        }
+                    }
+                    Rectangle {width: 8px;}
+                    text_finance := TextButton {
+                        width: 200px;
+                        text: "Tài Chính";
+                        clicked => {
+                            text_chart.selected = false;
+                            company_profile.selected = false;
+                            is_hide_stock_list = false;
+                        }
+                    }
+                    Rectangle {width: 8px;}
+                    company_profile := TextButton {
+                        width: 200px;
+                        text: "Hồ Sơ Doanh Nghiệp";
+                        clicked => {
+                            text_chart.selected = false;
+                            text_finance.selected = false;
+                            is_hide_stock_list = false;
+                        }
+                    }
+                    Rectangle {width: 8px;}
+                    Rectangle {} // Spacer
+                    VerticalLayout {
+                        Rectangle {}
+                        AimSearchBar {
+                            width: 90px;
+                            height: 25px;
+                            placeholder-text: "Tìm Kiếm";
+                            font-size: 12px;
+                            accepted(text) => {
+                                self.clear-input-focus();
+                                current_stock.symbol = text.to-uppercase();
+                                ui_data.is_new_stock = true;
+                            }
+                        }
+                        Rectangle {}
+                    }
+                    
+                    Rectangle {width: 20px;}
+                    
+                }
+            }
+
+            Rectangle {
+                height: 5px;
+            }
+    
+            VerticalLayout {
+                aim-chart := Rectangle {
+                    border-radius: 10px;
+                    background: #19191C;
+                    clip: true;
+                    if text_chart.selected: AimChart {
+                        ui_data <=> root.ui_data;
+                        source: root.image;
+                    }
+                    if text_finance.selected: TestFinance {
+                        stock_data <=> root.current_stock;
+                        overview_data <=> root.overview_data;
+                        balance_data <=> root.balance_sheet;
+                        income_data <=> root.income_statement;
+                        cash_flow_tt_data <=> root.cash_flow_tt_statement;
+                        cash_flow_gt_data <=> root.cash_flow_gt_statement;
+                    }
+
+                    if company_profile.selected: CompanyProfile {
+                        stock_data: root.current_stock;
+                        shared_holders: root.shared_holders;
+                        subsidiaries: root.subsidiaries;
+                        officers: root.officers;
+                        insider_transactions: root.insider_transactions;
+                        company_overview: root.company_overview;
+                    }
+
+
+                }
+        
+                if text_chart.selected:
+                mouse_function := HorizontalLayout {
+                    // width: 50px;
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/brush-tool-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Draw;
+                        clicked => {
+                            ui_data.type = MouseType.Draw;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/cross-arrow-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Move;
+                        clicked => {
+                            ui_data.type = MouseType.Move;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/rectangle-transform-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Rectangle;
+                        clicked => {
+                            ui_data.type = MouseType.Rectangle;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/circle.svg");
+                        enabled: ui_data.type == MouseType.Oval;
+                        clicked => {
+                            ui_data.type = MouseType.Oval;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/line-tool-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Line;
+                        clicked => {
+                            ui_data.type = MouseType.Line;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/arrow.svg");
+                        enabled: ui_data.type == MouseType.Arrow;
+                        clicked => {
+                            ui_data.type = MouseType.Arrow;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/horizontal-rule-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.HorizontalLine;
+                        clicked => {
+                            ui_data.type = MouseType.HorizontalLine;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/vertical-line-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.VerticalLine;
+                        clicked => {
+                            ui_data.type = MouseType.VerticalLine;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/text-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Oval;
+                        clicked => {
+                            ui_data.type = MouseType.Text;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/ruler-alt-svgrepo-com.svg");
+                        enabled: ui_data.type == MouseType.Ruler;
+                        clicked => {
+                            ui_data.type = MouseType.Ruler;
+                            ui_data.move-x = 0;
+                            ui_data.move-y = 0;
+                            ui_data.is_clean = false;
+                        }
+                    }
+        
+                    Rectangle {
+                        width: 50px;
+                        height: 30px;
+                        HorizontalLayout {
+                            Rectangle {
+                                width: 5px;
+                            }
+                            Rectangle {
+                                border-radius: 5px;
+                                states [
+                                    pressed when touch-area.pressed : {
+                                        background: #2a2e39.brighter(0.4);
+                                    }
+                            
+                                    hover when touch-area.has-hover: {
+                                        background: #2a2e39.brighter(0.2);
+                                    }
+                                ]
+                                HorizontalLayout {
+                                    Rectangle {}
+                                    VerticalLayout {
+                                        Rectangle {}
+                                        Rectangle {
+                                            width: 20px;
+                                            height: 20px;
+                                            background: ui_data.color;
+                                            border-radius: 4px;
+                                            touch-area := TouchArea {
+                                                width: parent.width;
+                                                height: parent.height;
+                                                clicked => {
+                                                    color_picker_x = touch-area.absolute-position.x - 48px;
+                                                    color_picker_y = touch-area.absolute-position.y - color-picker.height;
+                                                    color-picker.visible = true;
+                                                }
+        
+                                            }
+                                        }
+                                        Rectangle {}
+                                    }
+                                    Rectangle {}
+                                }
+                            }
+                            Rectangle {
+                                width: 5px;
+                            }
+                        }
+                    }
+                    Rectangle {
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/undo.svg");
+                        enabled: false;
+                        clicked => {
+                            ui_data.is_undo = true;
+                        }
+                    }
+                    ChartIcon {
+                        width: 50px;
+                        icon: @image-url("../../image/bin.svg");
+                        enabled: false;
+                        clicked => {
+                            ui_data.is-clean = true;
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            width: 5px;
+        }
+        VerticalLayout {
+            width: is_hide_stock_list ? 0px : 300px;
+            opacity: is_hide_stock_list ? 0 : 1;
+            visible: !is_hide_stock_list;
+            animate width { duration: 300ms; easing: ease-in-out; }
+            TickerList {
+                stock_groups <=> stock_groups;
+                current_stock <=> current_stock;
+                order_list <=> order_list;
+                is_list_in_update <=> is_list_in_update;
+                add_stock(group_name, stock_name) => {
+                    root.add_stock(group_name, stock_name);
+                }
+                remove_stock(group_name, stock_name) => {
+                    root.remove_stock(group_name, stock_name);
+                }
+                clicked(symbol) => {
+                    if symbol != current_stock.symbol {
+                        ui_data.is-new-stock = true;
+                    }
+                }
+                toggle_group(group_idx) => {
+                    root.toggle_group(group_idx);
+                }
+                switch_list(list_name) => {
+                    root.switch_list(list_name);
+                }
+                sort_stocks(type) => {
+                    root.sort_stocks(type);
+                }
+            }
+        }
+    }
+
+    color-picker := Rectangle {
+        visible: false;
+        width: 320px;
+        height: 250px;
+        background: #1a1a1a;
+        border-width: 1px;
+        border-color: #4d5b8a;
+        x: color_picker_x;
+        y: color_picker_y;
+        VerticalLayout {
+            width: parent.width;
+            padding: 16px;
+            spacing: 12px;
+            // Color grid
+            VerticalLayout {
+                spacing: 4px;
+                for row in [
+                    [#ffffff, #e0e0e0, #c0c0c0, #a0a0a0, #808080, #606060, #404040, #202020, #000000, #ff0000],
+                    [#ffd700, #ffff00, #bfff00, #00ff00, #00ffbf, #00ffff, #00bfff, #0080ff, #0000ff, #8a2be2],
+                    [#ffb6c1, #ff69b4, #ff1493, #db7093, #c71585, #800080, #4b0082, #483d8b, #6a5acd, #7b68ee],
+                    [#ffa07a, #ff7f50, #ff6347, #ff4500, #ff8c00, #ffa500, #ffd700, #ffffe0, #fafad2, #ffe4b5],
+                    [#e9967a, #f08080, #cd5c5c, #dc143c, #b22222, #8b0000, #a0522d, #deb887, #f5deb3, #fff8dc],
+                    [#adff2f, #7fff00, #7cfc00, #00fa9a, #00ff7f, #3cb371, #2e8b57, #228b22, #006400, #808000],
+                    [#00ced1, #20b2aa, #48d1cc, #40e0d0, #00bfff, #1e90ff, #6495ed, #4682b4, #5f9ea0, #b0c4de]
+                ] : HorizontalLayout {
+                    spacing: 4px;
+                    for color in row : Rectangle {
+                        width: 24px;
+                        height: 24px;
+                        background: color;
+                        border-width: ui_data.color == color ? 3px : 1px;
+                        border-color: ui_data.color == color ? #ff4081 : #333;
+                        border-radius: 4px;
+                        TouchArea {
+                            width: parent.width;
+                            height: parent.height;
+                            clicked => {
+                                ui_data.color = color;
+                                color-picker.visible = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+} 

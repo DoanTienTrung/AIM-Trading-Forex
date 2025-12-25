@@ -1,0 +1,102 @@
+import { ICBRow } from "../../data_type.slint";
+import { ListView } from "std-widgets.slint";
+
+export component ICBIndex inherits Rectangle {
+    in property <[ICBRow]> data : [
+        // ICB Code 10
+        { sector: "Công nghệ", percent: 2.3, gtgd: 429.78, nn_sell: 15, nn_buy: 15},
+        // ICB Code 15
+        { sector: "Viễn thông", percent: 0.15, gtgd: 429.78, nn_sell: 100.3, nn_buy: 100.3 },
+        // ICB Code 20
+        { sector: "Chăm sóc sức khỏe", percent: 7, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 30
+        { sector: "Tài chính", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 35
+        { sector: "Bất động sản", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 40
+        { sector: "Hàng tiêu dùng không thiết yếu", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 45
+        { sector: "Hàng tiêu dùng cơ bản", percent: -0.1, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 50
+        { sector: "Công nghiệp", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 55
+        { sector: "Vật liệu cơ bản", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 60
+        { sector: "Năng lượng", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+        // ICB Code 65
+        { sector: "Các dịch vụ hạ tầng", percent: 2.3, gtgd: 429.78, nn_sell: 0, nn_buy: 0 },
+    ];
+
+    min-width: 400px;
+
+    VerticalLayout {
+        Rectangle {
+            height: 40px;
+            background: #2a2a2a;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+
+            Text {
+                text: "CHỈ SỐ NGÀNH (ICB)";
+                font-size: 14px;
+                font-weight: 700;
+                color: white;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+        Rectangle {
+            height: 36px;
+            background: #333;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                Text { width: 45%; text: "NGÀNH"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+                Text { width: 10%; text: "%"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+                Text { width: 15%; text: "GTGD"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+                Text { width: 15%; text: "NN Bán"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+                Text { width: 15%; text: "NN Mua"; font-size: 12px; font-weight: 600; color: #aaa; horizontal-alignment: left; vertical-alignment: center; }
+            }
+        }
+        VerticalLayout {
+            ListView {
+                for row in data : Rectangle {
+                    height: 28px;
+                    HorizontalLayout {
+                        padding-left: 8px;
+                        padding-right: 8px;
+                        Text { width: 45%; text: row.sector; font-size: 12px; font-weight: 600; color: white; horizontal-alignment: left; vertical-alignment: center; }
+                        Text { width: 10%; text: row.percent.to_fixed(2) + " %"; font-size: 12px; font-weight: 600; color: row.percent == 0.0 ? #FFD700 : (row.percent < 0.0 ? #DC3545 : #28A745); horizontal-alignment: left; vertical-alignment: center; }
+                        Text {
+                            width: 15%;
+                            text: row.gtgd.to_fixed(2) + " tỷ";
+                            font-size: 12px;
+                            font-weight: 600;
+                            color: white;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            width: 15%;
+                            text: row.nn_sell.to_fixed(2) + " tỷ";
+                            font-size: 12px;
+                            font-weight: 600;
+                            color: #DC3545;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                        Text {
+                            width: 15%;
+                            text: row.nn_buy.to_fixed(2) + " tỷ";
+                            font-size: 12px;
+                            font-weight: 600;
+                            color: #28A745;
+                            horizontal-alignment: left;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

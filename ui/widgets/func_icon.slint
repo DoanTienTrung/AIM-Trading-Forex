@@ -1,0 +1,56 @@
+
+
+import { VerticalBox } from "std-widgets.slint";
+export component ChartIcon inherits Rectangle {
+    in property <bool> enabled;
+    in property <image> icon: @image-url("../image/brush-tool-svgrepo-com.svg");
+    callback clicked();
+    height: 30px;
+
+    HorizontalLayout {
+        Rectangle {
+            width: 5px;
+        }
+        Rectangle {
+            width: 30px;
+            border-radius: 5px;
+            states [
+                pressed when touch-area.pressed : {
+                    background: Theme.background-pressed;
+                    image.colorize: Theme.foreground-pressed;
+                }
+        
+                hover when touch-area.has-hover: {
+                    background: Theme.background-hover;
+                    image.colorize: Theme.foreground-hover;
+                }
+            ]
+            image := Image {
+                source: icon;
+                width: 60%;
+                height: 60%;
+                colorize: root.enabled? #eeb45e:#FFFFFF;
+            }
+    
+            touch-area := TouchArea {
+                clicked => {
+                    clicked();
+                }
+            }
+        }
+        Rectangle {
+            width: 5px;
+        }
+    }
+}
+
+export global Theme  {
+    // brushes
+    out property <brush> background-regular: #2a2e39;
+    out property <brush> background-hover: root.background-regular.brighter(0.2);
+    out property <brush> background-pressed: root.background-regular.brighter(0.4);
+    out property <brush> foreground: #FFFFFF;
+    out property <brush> foreground-hover: root.foreground.darker(0.2);
+    out property <brush> foreground-pressed: root.foreground.darker(0.4);
+
+}

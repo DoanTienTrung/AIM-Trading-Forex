@@ -1,0 +1,125 @@
+import { InfluenceData } from "../../data_type.slint";
+
+export component StockInfluence inherits Rectangle {
+	in property <[InfluenceData]> data : [
+		{ symbol: "VCB", value: 5.48 },
+		{ symbol: "VPB", value: 3.92 },
+		{ symbol: "MBB", value: 2.75 },
+		{ symbol: "ACB", value: 2.19 },
+		{ symbol: "VIC", value: 1.98 },
+		{ symbol: "HDB", value: 1.38 },
+		{ symbol: "TCB", value: 1.18 },
+		{ symbol: "BID", value: 1.19 },
+		{ symbol: "VJC", value: 1.19 },
+		{ symbol: "SHB", value: 1.09 },
+		{ symbol: "HVN", value: -0.19 },
+		{ symbol: "BCM", value: -0.17 },
+		{ symbol: "GAS", value: -0.18 },
+		{ symbol: "FRT", value: -0.19 },
+		{ symbol: "VGC", value: -0.18 },
+		{ symbol: "VPL", value: -0.19 },
+		{ symbol: "GEE", value: -0.19 },
+		{ symbol: "MSN", value: -0.19 },
+		{ symbol: "GVR", value: -0.29 },
+		{ symbol: "FPT", value: -0.44 }
+	];
+
+	pure function sum_positive() -> float {
+		return data[0].value + data[1].value + data[2].value + data[3].value + data[4].value + data[5].value + data[6].value + data[7].value + data[8].value + data[9].value;
+	}
+
+	pure function sum_negative() -> float {
+		return data[10].value + data[11].value + data[12].value + data[13].value + data[14].value + data[15].value + data[16].value + data[17].value + data[18].value + data[19].value;
+	}
+
+	background: #181818;
+
+	VerticalLayout {
+		spacing: 5px;
+        padding: 10px;
+		Rectangle {
+			height: 40px;
+			background: transparent;
+			Text {
+				text: "TOP CỔ PHIẾU ẢNH HƯỞNG THỊ TRƯỜNG";
+				font-size: 18px;
+				font-weight: 700;
+				color: white;
+				horizontal-alignment: center;
+				vertical-alignment: center;
+			}
+		}
+		Rectangle {
+			height: 1px;
+			background: #444;
+		}
+		Rectangle {
+			max-height: 300px;
+			background: transparent;
+			VerticalLayout {
+				spacing: 0px;
+				Rectangle {
+					background: transparent;
+					VerticalLayout {
+						spacing: 0px;
+						Rectangle {
+							height: 1px;
+							background: transparent;
+						}
+						HorizontalLayout {
+							spacing: 5px;
+							for bar[idx] in data : Rectangle {
+								VerticalLayout {
+									spacing: 5px;
+                                    Rectangle {}
+									Text {
+										text: bar.value.to-fixed(3);
+										font-size: 12px;
+										font-weight: 700;
+										color: white;
+										horizontal-alignment: center;
+									}
+									Rectangle {
+										height: (bar.value.abs() * 35px) + 10px;
+										background: bar.value >= 0 ? #28A745 : #DC3545;
+										border-radius: 2px;
+									}
+									Text {
+										text: bar.symbol;
+										font-size: 11px;
+										font-weight: 600;
+										color: white;
+										horizontal-alignment: center;
+									}
+								}
+							}
+						}
+					}
+				}
+				Rectangle {
+					height: 1px;
+					background: #444;
+				}
+			}
+		}
+		Rectangle {
+			height: 32px;
+			background: transparent;
+			HorizontalLayout {
+				spacing: 12px;
+				Text {
+					text: "Top cổ phiếu đóng góp tăng: " + sum_positive().to-fixed(3);
+					font-size: 13px;
+					font-weight: 700;
+					color: #28A745;
+				}
+				Text {
+					text: "Top cổ phiếu đóng góp giảm: " + sum_negative().to-fixed(3);
+					font-size: 13px;
+					font-weight: 700;
+					color: #DC3545;
+				}
+			}
+		}
+	}
+}

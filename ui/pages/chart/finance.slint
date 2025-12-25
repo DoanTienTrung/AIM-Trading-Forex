@@ -1,0 +1,605 @@
+import { ListView } from "std-widgets.slint";
+import { TextButton } from "../../widgets/aim_widget.slint";
+import { FinanceName, FinanceValue, FinanceList, HeaderData } from "finance_type.slint";
+import { Utils, StockData } from "../../data_type.slint";
+
+component BalanceCell inherits Rectangle {
+    in property <float> value;
+    in property <bool> is-header: false;
+    in property <bool> is-total-row: false;
+    in property <bool> is-odd-row: false;
+    in property <bool> is-hover: false;
+
+    background: is-hover ? (
+                    is-header ? #333333 : 
+                    is-total-row ? #204d39 : 
+                    is-odd-row ? #252525 : 
+                    #202020
+                ) : (
+                    is-header ? #242424 : 
+                    is-total-row ? #1a3c2d : 
+                    is-odd-row ? #1a1a1a : 
+                    transparent
+                );
+    
+    // Bottom border for cell
+    Rectangle {
+        x: 0;
+        y: parent.height - 1px;
+        width: parent.width;
+        height: 1px;
+        background: is-header ? #333333 : #222222;
+    }
+    
+    Rectangle {
+        width: 100%;
+        
+        // Create a fixed-width text area to ensure alignment
+        Text {
+            x: 0;
+            width: parent.width - 12px;  // 12px right padding
+            height: parent.height;
+            
+            text: value <= -1000 || value >= 1000 || value == 0 ? 
+                    Utils.parse_volume(value / 1000000) : value.to-fixed(2);
+            color: value < 0 ? #ff4444 : 
+                  is-header ? #ffffff : 
+                  is-total-row ? #4caf50 : white;
+            font-size: 14px;
+            font-weight: is-header || is-total-row ? 700 : 600;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+        }
+    }
+}
+
+component BalanceRow inherits Rectangle {
+    in property <string> name;
+    in property <int> level;
+    in property <int> parent-id;
+    in property <bool> expanded;
+    in property <[float]> quarter-values;
+    in property <int> row-index: 0;
+    callback toggle();
+
+    height: 42px;
+    
+    // Determine if this is a header, total, or regular row
+    property <bool> is-header: level == 0 && parent-id == -1;
+    // Simple check for total keywords in the name
+    property <bool> is-total-row: name.to-lowercase() == "tổng" || 
+                                  name.to-lowercase() == "total" ||
+                                  name.to-lowercase() == "lợi nhuận" ||
+                                  name.to-lowercase() == "loi nhuan";
+    property <bool> is-odd-row: Math.mod(row-index, 2) == 1;
+    
+    background: is-hovered ? (
+                is-header ? #333333 : 
+                is-total-row ? #204d39 : 
+                is-odd-row ? #252525 : 
+                #202020
+            ) : (
+                is-header ? #242424 : 
+                is-total-row ? #1a3c2d : 
+                is-odd-row ? #1a1a1a : 
+                transparent
+            );
+    
+    // Visual separation with a bottom-border
+    Rectangle {
+        x:0; y: parent.height - 1px; width: parent.width; height: 1px;
+        background: is-header || is-total-row ? #333333 : transparent;
+    }
+
+    // Define a property to track the hover state
+    property <bool> is-hovered: touch-area.has-hover;
+    
+    touch-area := TouchArea { 
+        width: 100%;
+        height: 100%;
+    }
+
+    HorizontalLayout {
+        padding: 0;
+        spacing: 0;
+
+        // Name column
+        Rectangle {
+            width: 45%;
+            
+            // Right border for column separation
+            if !is-header:
+            Rectangle {
+                x: parent.width - 1px;
+                y: 0;
+                width: 1px;
+                height: parent.height;
+                background: #333333;
+            }
+            
+            HorizontalLayout {
+                spacing: 4px;
+                padding-left: level * 20px;
+                padding-right: 8px;
+
+                TouchArea {
+                    width: 24px;
+                    clicked => { 
+                        if (parent-id >= 0) {
+                            root.toggle();
+                        }
+                    }
+                    Text {
+                        text: parent-id >= 0 ? (expanded ? "▼" : "▶") : "";
+                        color: #888888;
+                        font-size: 10px;
+                        height: 100%;
+                        width: 100%;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+
+                Text {
+                    text: name;
+                    overflow: elide;
+                    color: is-header ? white : 
+                           is-total-row ? #4caf50 : 
+                           level == 0 ? white : #cccccc;
+                    font-size: 14px;
+                    font-weight: is-header || is-total-row || level == 0 ? 700 : 600;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // Value columns (one per quarter)
+        Rectangle {
+            width: 55%;
+            
+            HorizontalLayout {
+                spacing: 0;
+                
+                for val[idx] in quarter-values : Rectangle {
+                    // Each column gets equal width (hard-coded for 5 columns)
+                    width: 20%;
+                    
+                    // Column divider
+                    if !is-header:
+                    Rectangle {
+                        x: parent.width - 1px;
+                        y: 0;
+                        width: 1px;
+                        height: parent.height;
+                        background: #333333;
+                        // Hide the last column's right border
+                        visible: idx < quarter-values.length - 1;
+                        // Ensure it's always on top
+                        z: 1;
+                    }
+                    
+                    BalanceCell {
+                        width: 100%;
+                        height: 100%;
+                        value: val;
+                        is-header: root.is-header;
+                        is-total-row: root.is-total-row;
+                        is-odd-row: root.is-odd-row;
+                        is-hover: root.is-hovered;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+export component StockInfo inherits Rectangle {
+    in property <string> name: "giá sàn";
+    in property <float> value: 0.0;
+    in property <color> font-color: #FFFFFF;
+
+    HorizontalLayout {
+        spacing: 2px;
+        Text {
+            text: name;
+            color: #999999;
+            font-size: 12px;
+            vertical-alignment: center;
+            horizontal-alignment: left;
+        }
+        Text {
+            text: value.to-fixed(2);
+            color: font-color;
+            font-size: 13px;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+        }
+    }
+}
+
+export component StockHeader inherits Rectangle {
+    in-out property <StockData> stock_data;
+
+    background: #1f1f1f;
+    HorizontalLayout {
+        padding: 10px;
+        // Left section - Stock name and details
+        VerticalLayout {
+            HorizontalLayout {
+                Text {
+                    text: root.stock_data.symbol;
+                    vertical-alignment: center;
+                    color: white;
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+                Text {
+                    text: root.stock_data.info;
+                    vertical-alignment: center;
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 400;
+                }
+            }
+            HorizontalLayout {
+                spacing: 16px;
+                Text {
+                    text: root.stock_data.price.to-fixed(2);
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                    color: root.stock_data.change-percent < 0.0 ? #ff0000 :
+                            (root.stock_data.change-percent == 0.0 ? #ffeb3b : #1de9b6);
+                    font-size: 20px;
+                    font-weight: 700;
+                }
+                VerticalLayout {
+                    Text {
+                        text: root.stock_data.change < 0.0 ? 
+                              root.stock_data.change.to-fixed(2):
+                              "+" + root.stock_data.change.to-fixed(2);
+                        horizontal-alignment: left;
+                        color: root.stock_data.change-percent < 0.0 ? #ff0000 :
+                               (root.stock_data.change-percent == 0.0 ? #ffeb3b : #1de9b6);
+                        font-size: 14px;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: root.stock_data.change-percent < 0.0 ? 
+                              root.stock_data.change-percent.to-fixed(2) + "%":
+                              "+" + root.stock_data.change-percent.to-fixed(2) + "%";
+                        horizontal-alignment: left;
+                        color: root.stock_data.change-percent < 0.0 ? #ff0000 :
+                               (root.stock_data.change-percent == 0.0 ? #ffeb3b : #1de9b6);
+                        font-size: 14px;
+                        font-weight: 700;
+                    }
+                }
+            }
+            Text {
+                text: "● Hóa chất (Mã ICB: 1300)";
+                color: #999999;
+                font-size: 13px;
+            }
+
+        }
+
+        // Right section - Stats
+        HorizontalLayout {
+            spacing: 24px;
+                    
+            // First column
+            VerticalLayout {
+                spacing: 4px;
+                StockInfo { name: "Giá tham chiếu"; value: root.stock_data.ref-price; font-color: #ffeb3b; }
+                StockInfo { name: "Giá trần"; value: root.stock_data.ceil-price; font-color: #9c27b0; }
+                StockInfo { name: "Giá sàn"; value: root.stock_data.floor-price; font-color: #64b5f6; }
+                StockInfo { name: "Giá cao nhất"; value: root.stock_data.high; font-color: #4caf50; }
+                StockInfo { name: "Giá thấp nhất"; value: root.stock_data.low; font-color: #ff0000; }
+            }
+
+            // Second column
+            VerticalLayout {
+                spacing: 4px;
+                StockInfo { name: "Volume trung bình 10 phiên"; value: root.stock_data.volume; }
+                StockInfo { name: "Cổ phiếu lưu hành"; value: 1000000000; }
+                StockInfo { name: "Vốn hoá (tỷ đồng)"; value: 100000; }
+                StockInfo { name: "Tỷ lệ cổ tức"; value: 5.5; }
+            }
+        }
+    }
+}
+
+export component FinanceDataSheet inherits Rectangle {
+    background: #181818;
+    border-radius: 8px;
+    drop-shadow-offset-x: 0px;
+    drop-shadow-offset-y: 2px;
+    drop-shadow-blur: 10px;
+    drop-shadow-color: #00000080;
+
+    in-out property <FinanceList> data;
+
+    pure function should-show-item(idx: int) -> bool {
+        if (data.name[idx].parent-id == -1) {
+            return true;
+        }
+
+        if (data.name[idx].parent-id >= 0) {
+            if (!data.expanded[data.name[idx].parent-id]) {
+                return false;
+            }
+
+            if (data.name[idx].level > 1 && !data.expanded[data.name[data.name[idx].parent-id].parent-id]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    pure function make-row-values(idx: int) -> [float] {
+        // Reverse the order to show newest quarter first (Q2 2025, Q1 2025, Q4 2024, Q3 2024, Q2 2024)
+        [
+            data.value[0].items[idx],  // Q2 2025 (newest)
+            data.value[1].items[idx],  // Q1 2025
+            data.value[2].items[idx],  // Q4 2024
+            data.value[3].items[idx],  // Q3 2024
+            data.value[4].items[idx]   // Q2 2024 (oldest)
+        ]
+    }
+    
+    VerticalLayout {
+        padding: 0px;
+        spacing: 0px;
+        
+        // Quarter headers
+        Rectangle {
+            height: 48px;
+            background: #1c1c1c;
+            
+            HorizontalLayout {
+                Rectangle {
+                    // Empty space for name column
+                    width: 45%;
+                    
+                    // Right border
+                    Rectangle {
+                        x: parent.width - 1px;
+                        y: 0;
+                        width: 1px;
+                        height: parent.height;
+                        background: #333333;
+                        z: 1;
+                    }
+                    
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        alignment: start;
+                        Text {
+                            text: "Theo Quý";
+                            color: #cccccc;
+                            font-size: 15px;
+                            font-weight: 700;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 55%;
+                    
+                    HorizontalLayout {
+                        spacing: 0;
+                        
+                        for quarter[idx] in data.value : Rectangle {
+                            // Fixed width for each column
+                            width: 20%;
+                            
+                            // Right border for column separation
+                            Rectangle {
+                                x: parent.width - 1px;
+                                y: 0;
+                                width: 1px;
+                                height: parent.height;
+                                background: #333333;
+                                z: 1;
+                                visible: idx < data.value.length - 1;
+                            }
+                            
+                            HorizontalLayout {
+                                padding-right: 16px;
+                                alignment: end;
+                                Text {
+                                    text: quarter.quarter;
+                                    color: white;
+                                    font-size: 15px;
+                                    font-weight: 700;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Bottom border
+            Rectangle {
+                x: 0;
+                y: parent.height - 1px;
+                width: parent.width;
+                height: 1px;
+                background: #333333;
+                z: 1;
+            }
+        }
+
+        // Data rows
+        ListView {
+            viewport-height: root.height - 90px;
+            
+            for name[i] in data.name : Rectangle {
+                height: should-show-item(i) ? 42px : 0px;
+                clip: true;
+    
+                BalanceRow {
+                    name: name.name;
+                    quarter-values: make-row-values(i);
+                    level: name.level;
+                    parent-id: name.parent-id;
+                    expanded: data.expanded[i];
+                    row-index: i;
+                    toggle => {
+                        root.data.expanded[i] = !root.data.expanded[i];
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component FinanceSheet inherits Rectangle {
+    background: #181818;
+
+    in-out property <FinanceList> balance_data;
+    in-out property <FinanceList> business_result;
+    in-out property <FinanceList> cash_flow_tt;
+    in-out property <FinanceList> cash_flow_gt;
+    in-out property <FinanceList> overview;
+    in-out property <StockData> stock_data;
+
+    VerticalLayout {
+        padding: 8px;
+
+        StockHeader {
+            stock_data <=> root.stock_data;
+            border-radius: 10px;
+            height: 150px;
+        }
+        Rectangle {
+            height: 56px;
+            HorizontalLayout {
+                overview := TextButton {
+                    text: "TỔNG QUAN TÀI CHÍNH";
+                    selected: true;
+                    clicked => {
+                        balance_sheet.selected = false;
+                        business_result.selected = false;
+                        cash_flow_gt.selected = false;
+                        cash_flow_tt.selected = false;
+                        event.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                balance_sheet := TextButton {
+                    text: "CÂN ĐỐI KẾ TOÁN";
+                    clicked => {
+                        overview.selected = false;
+                        business_result.selected = false;
+                        cash_flow_tt.selected = false;
+                        cash_flow_gt.selected = false;
+                        event.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                business_result := TextButton {
+                    text: "KẾT QUẢ KINH DOANH";
+                    clicked => {
+                        overview.selected = false;
+                        balance_sheet.selected = false;
+                        cash_flow_tt.selected = false;
+                        cash_flow_gt.selected = false;
+                        event.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                cash_flow_tt := TextButton {
+                    text: "LCTT - TT";
+                    clicked => {
+                        overview.selected = false;
+                        balance_sheet.selected = false;
+                        business_result.selected = false;
+                        cash_flow_gt.selected = false;
+                        event.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                cash_flow_gt := TextButton {
+                    text: "LCTT - GT";
+                    clicked => {
+                        overview.selected = false;
+                        balance_sheet.selected = false;
+                        business_result.selected = false;
+                        cash_flow_tt.selected = false;
+                        event.selected = false;
+                    }
+                }
+                Rectangle {width: 8px;}
+                event := TextButton {
+                    text: "SỰ KIỆN - BÁO CÁO";
+                    clicked => {
+                        overview.selected = false;
+                        balance_sheet.selected = false;
+                        business_result.selected = false;
+                        cash_flow_tt.selected = false;
+                        cash_flow_gt.selected = false;
+                    }
+                }
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+                Rectangle {}
+            }
+        }
+        if balance_sheet.selected: FinanceDataSheet {
+            data <=> root.balance_data;
+        }
+        if overview.selected: FinanceDataSheet {
+            data <=> root.overview;
+        }
+        if business_result.selected: FinanceDataSheet {
+            data <=> root.business_result;
+        }
+        if cash_flow_tt.selected: FinanceDataSheet {
+            data <=> root.cash_flow_tt;
+        }
+        if cash_flow_gt.selected: FinanceDataSheet {
+            data <=> root.cash_flow_gt;
+        }
+        if event.selected: Rectangle {
+            // Placeholder for Events content
+            Text {
+                text: "Sự kiện/báo cáo sẽ hiển thị ở đây";
+                color: white;
+                font-size: 16px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+
+export component TestFinance inherits Rectangle {
+    background: #181818;
+
+    // Balance sheet data
+    in-out property <FinanceList> balance_data;
+    in-out property <FinanceList> income_data;
+    in-out property <FinanceList> cash_flow_tt_data;
+    in-out property <FinanceList> cash_flow_gt_data;
+    in-out property <FinanceList> overview_data;
+    in-out property <StockData> stock_data;
+
+    FinanceSheet {
+        // Connect all data sources
+        overview: root.overview_data;
+        balance_data: balance_data;
+        business_result: root.income_data;
+        cash_flow_tt: root.cash_flow_tt_data;
+        cash_flow_gt: root.cash_flow_gt_data;
+        stock_data <=> root.stock_data;
+    }
+}

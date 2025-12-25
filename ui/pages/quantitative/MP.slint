@@ -1,0 +1,683 @@
+import { Button, VerticalBox, ScrollView, ListView, HorizontalBox, GridBox, ComboBox } from "std-widgets.slint";
+import { ListComboBox } from "../sentiment/sentiment_component.slint";
+
+// -------------------------------------------------------------------------
+// 2. GLOBAL STYLES
+// -------------------------------------------------------------------------
+export global Palette {
+    out property <color> bg-color: #111111;
+    out property <color> card-bg: #1A1A1A;
+    out property <color> sidebar-bg: #1E1E1E;
+    
+    out property <color> text-primary: #FFFFFF;
+    out property <color> text-secondary: #AAAAAA;
+    out property <color> text-muted: #666666;
+
+    // Chart Zones
+    out property <color> zone-overbought: #381E22;
+    out property <color> zone-strong: #2A2126;     
+    out property <color> zone-neutral: #1F232C;   
+    out property <color> zone-oversold: #182B28;
+    // Accents
+    out property <color> accent-blue: #4F46E5;
+    out property <color> accent-cyan: #06B6D4;
+    out property <color> accent-green: #10B981;
+    out property <color> accent-red: #EF4444;
+    out property <color> accent-grey: #B0B3B8;
+}
+
+
+export struct RsiData {
+    symbol: string,
+    rsi14: string,    // Table displays text
+    price: string,    // Table displays text
+    vhtt: string,     // Table displays text (Market Cap)
+}
+
+export struct CoinData {
+    symbol: string,
+    rsi: float,       // For color logic
+    x: float,         // Horizontal position (0.0 to 1.0) based on Market Cap
+    y: float,         // Vertical position (0.0 to 1.0) based on RSI
+}
+
+// New Struct for MA50 Heatmap
+export struct MaData {
+    symbol: string,
+    rsi: float,       // Keep RSI for coloring (Green/Red) logic
+    x: float,         // Horizontal (Market Cap)
+    y: float,         // Vertical (Price vs MA50 deviation)
+}
+
+// -------------------------------------------------------------------------
+// 3. COMPONENTS
+// -------------------------------------------------------------------------
+export component MySlider inherits Rectangle {
+    in-out property<float> maximum: 100;
+    in-out property<float> minimum: 0;
+    in-out property<float> value;
+
+    height: 6px; 
+    border-radius: root.height/2;
+    background: @linear-gradient(90deg, #08fc01 0%, #aaaa00 50%, #f70501 100%);
+    horizontal-stretch: 1;
+    min-width: 50px; 
+
+    handle := Rectangle {
+        width: 14px;
+        height: 14px;
+        border-radius: self.height / 2;
+        background: white;
+        border-width: 1px;
+        border-color: #999;
+        y: (parent.height - self.height) / 2;
+        x: (root.width - handle.width) * (root.value - root.minimum)/(root.maximum - root.minimum);
+    }
+
+    touch := TouchArea {
+        width: 100%;
+        height: 200%;
+        y: (parent.height - self.height) / 2;
+        property <float> pressed-value;
+        
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                self.pressed-value = root.value;
+            }
+        }
+        moved => {
+            if (self.enabled && self.pressed) {
+                root.value = max(root.minimum, min(root.maximum,
+                    self.pressed-value + (touch.mouse-x - touch.pressed-x) * (root.maximum - root.minimum) / (root.width - handle.width)));
+            }
+        }
+    }
+}
+
+export component SliderCard inherits Rectangle {
+    in-out property <string> title: "Quá Mua và Quá Bán";
+    in-out property <string> left-text: "Quá Mua";
+    in-out property <string> right-text: "Quá Bán";
+    in-out property <float> left-value: 2.1;
+    in-out property <float> right-value: 0.12;
+
+    horizontal-stretch: 1;
+    min-width: 20px; 
+    
+    height: 120px;
+    background: Palette.card-bg;
+    border-radius: 8px;
+    padding: 15px;
+    VerticalLayout {
+        spacing: 5px;
+        Text {
+            text: root.title;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            horizontal-alignment: center;
+            overflow: elide;
+        }
+
+        Rectangle { vertical-stretch: 1;
+        } 
+
+        HorizontalLayout {            
+            VerticalLayout {
+                alignment: start;
+                spacing: 2px;
+                Text {
+                    text: root.left-value + "%";
+                    color: #cccccc;
+                    font-size: 20px;
+                    font-weight: 500;
+                }
+                Text {
+                    text: root.left-text;
+                    color: #777777;
+                    font-size: 10px;
+                }
+            }
+            Rectangle { horizontal-stretch: 1;
+            }
+            VerticalLayout {
+                spacing: 2px;
+                alignment: end;
+                Text {
+                    text: root.right-value + "%";
+                    color: #cccccc;
+                    font-size: 20px;
+                    font-weight: 500;
+                    horizontal-alignment: right;
+                }
+                Text {
+                    text: root.right-text;
+                    color: #777777;
+                    font-size: 10px;
+                    horizontal-alignment: right;
+                }
+            }
+        }
+
+        MySlider {
+            value: 75;
+            minimum: 0;
+            maximum: 100;
+        }
+        Rectangle { height: 5px;
+        } 
+    }
+}
+
+component TableRow {
+    in property <string> symbol;
+    in property <string> name;
+    in property <string> rsi14;
+    in property <string> rsi21;
+    in property <bool> is-header: false;
+
+    callback sort_rsi14();
+    Rectangle {
+        height: 35px;
+        background: transparent;
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            spacing: 10px;
+            Text { 
+                text: root.symbol;
+                width: 15%; 
+                overflow: elide;
+                color: root.is-header ? Palette.text-secondary : Palette.text-primary; 
+                font-weight: root.is-header ? 400 : 700;
+                vertical-alignment: center;
+            }
+            Text { 
+                text: root.name;
+                horizontal-stretch: 1;
+                overflow: elide;
+                color: Palette.text-secondary; 
+                vertical-alignment: center;
+            }
+            TouchArea {
+                enabled: root.rsi14 == "RSI 14";
+                mouse-cursor: self.enabled ? pointer : default;
+                clicked => {if self.enabled { sort_rsi14(); }};
+                width: 15%;
+                Text { 
+                    text: root.rsi14;
+                    //width: 15%; 
+                    color: root.is-header ? Palette.text-secondary : Palette.accent-cyan; 
+                    vertical-alignment: center;
+                }
+            }
+            Text { 
+                text: root.rsi21;
+                width: 15%; 
+                color: root.is-header ? Palette.text-secondary : Palette.accent-green; 
+                vertical-alignment: center;
+            }
+        }
+        Rectangle {
+            y: parent.height - 1px;
+            height: 1px;
+            background: #333;
+            visible: root.is-header;
+        }
+    }
+}
+
+component CryptoDot inherits Rectangle {
+    in property <float> rsi;
+    in property <string> symbol;
+    
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background: 
+        rsi >= 70 ?
+        Palette.accent-red : 
+        rsi <= 30 ?
+        Palette.accent-green : 
+        Palette.accent-grey;
+
+    border-width: 1px;
+    border-color: self.background.with-alpha(0.5);
+    Text {
+        text: root.symbol;
+        color: Palette.text-primary;
+        font-size: 8px;
+        x: (parent.width - self.width) / 2;
+        y: -10px;
+        opacity: 0.7;
+    }
+}
+
+component RsiHeatmapChart inherits Rectangle {
+    background: Palette.card-bg;
+    border-radius: 8px;
+    
+    in property <[CoinData]> coins;
+
+    VerticalLayout {
+        padding: 15px;
+        spacing: 10px;
+        HorizontalLayout {
+            Text { text: "Crypto RSI Heatmap ";
+            color: Palette.text-primary; font-weight: 700; font-size: 14px; }
+            Rectangle { horizontal-stretch: 1;
+            }
+            ListComboBox {
+                model: ["8h", "16h", "24", "48h"];
+                current-index: 0;
+                width: 100px;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 5px;
+            vertical-stretch: 1; 
+            
+            Rectangle {
+                horizontal-stretch: 1;
+                vertical-stretch: 1;
+                
+                VerticalLayout {
+                    width: 100%;
+                    height: 100%;
+                    Rectangle { background: Palette.zone-overbought; vertical-stretch: 25; }
+                    Rectangle { background: Palette.zone-strong;
+                    vertical-stretch: 25; }
+                    Rectangle { background: Palette.zone-neutral;
+                    vertical-stretch: 20; }
+                    Rectangle { background: Palette.zone-oversold;
+                    vertical-stretch: 30; }
+                }
+
+                Rectangle { height: 1px;
+                background: #ffffff10; y: parent.height * 0.25; }
+                Rectangle { height: 1px;
+                background: #ffffff10; y: parent.height * 0.50; }
+                Rectangle { height: 1px;
+                background: #ffffff10; y: parent.height * 0.70; }
+
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.15; }
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.35; }
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.60; }
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.85; }
+
+                for coin in root.coins : CryptoDot {
+                    symbol: coin.symbol;
+                    rsi: coin.rsi;
+                    x: parent.width * coin.x;
+                    y: parent.height * coin.y;
+                }
+
+                Rectangle {
+                    y: parent.height - 15px;
+                    height: 15px;
+                    width: parent.width;
+                    Text { text: "$4T";   color: Palette.text-muted; font-size: 9px; x: 0;
+                    }
+                    Text { text: "$1T";
+                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.15; }
+                    Text { text: "$100B";
+                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.35; }
+                    Text { text: "$10B";
+                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.60; }
+                    Text { text: "$100M";
+                    color: Palette.text-muted; font-size: 9px; x: parent.width * 0.85; }
+                }
+            }
+
+            VerticalLayout {
+                alignment: space-between;
+                width: 20px;
+                Text { text: "100"; font-size: 9px; color: Palette.text-muted;
+                }
+                Text { text: "75";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "50";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "30";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "0";
+                font-size: 9px; color: Palette.text-muted; }
+            }
+        }
+    }
+}
+
+component MaHeatmapChart inherits Rectangle {
+    background: Palette.card-bg;
+    border-radius: 8px;
+    
+    // CHANGED: Use dynamic model instead of hardcoded
+    in property <[MaData]> coins;
+
+    VerticalLayout {
+        padding: 15px;
+        spacing: 10px;
+        // YOUR COMBOBOX HEADER (Preserved)
+        HorizontalLayout {
+            Text { text: "Biểu đồ Heatmap Chỉ số MA50";
+            color: Palette.text-primary; font-weight: 700; font-size: 14px; }
+            Rectangle { horizontal-stretch: 1;
+            }
+            Text { text: "Ngành: "; color: Palette.text-secondary;
+            font-size: 10px; vertical-alignment: center; }
+            ListComboBox {
+                model: ["Tất cả", "Ngân hàng", "Chứng khoán" ];
+                current-index: 0;
+                width: 100px;
+            }
+            Text { text: "Sàn: ";
+            color: Palette.text-secondary; font-size: 10px; vertical-alignment: center; }
+            ListComboBox {
+                model: ["Tất cả", "Ngân hàng", "Chứng khoán" ];
+                current-index: 0;
+                width: 100px;
+            }
+            ListComboBox {
+                model: ["Hôm nay", "Tuần này", "Tháng này" ];
+                current-index: 0;
+                width: 100px;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 5px;
+            vertical-stretch: 1; 
+            
+            Rectangle {
+                width: 15px;
+                Text { 
+                    text: "Độ lệch chuẩn";
+                    transform-rotation: -90deg;
+                    color: Palette.text-muted;
+                    font-size: 10px;
+                    //width: 15px;
+                    vertical-alignment: center;
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                vertical-stretch: 1;
+                background: @linear-gradient(180deg, #252525 0%, #151515 100%);
+
+                // UPDATE: Color zones to match reference (Red Top, Green Bottom)
+                // Top Zone (Red) - Deviation > 1.5
+                Rectangle {
+                    y: 0; // Top
+                    height: parent.height * 0.25; 
+                    background: Palette.accent-red.with-alpha(0.1);
+                    border-width: 1px;
+                    border-color: Palette.accent-red.with-alpha(0.2);
+                }
+
+                // Middle Zone (Implicit Grey/Dark from background)
+
+                // Bottom Zone (Green) - Deviation < 0.5
+                Rectangle {
+                    y: parent.height * 0.75;
+                    height: parent.height * 0.25;
+                    background: Palette.accent-green.with-alpha(0.1);
+                    border-width: 1px;
+                    border-color: Palette.accent-green.with-alpha(0.2);
+                }
+
+                Rectangle { height: 1px;
+                background: #ffffff05; y: parent.height * 0.2; }
+                Rectangle { height: 1px;
+                background: #ffffff05; y: parent.height * 0.4; }
+                Rectangle { height: 1px;
+                background: #ffffff05; y: parent.height * 0.6; }
+                Rectangle { height: 1px;
+                background: #ffffff05; y: parent.height * 0.8; }
+                
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.25; }
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.50; }
+                Rectangle { width: 1px;
+                background: #ffffff05; x: parent.width * 0.75; }
+
+                // CHANGED: Iterating over coin list
+                for coin in root.coins : CryptoDot {
+                    symbol: coin.symbol;
+                    rsi: coin.rsi;
+                    x: parent.width * coin.x;
+                    y: parent.height * coin.y;
+                }
+
+               Rectangle {
+                    y: parent.height - 25px;
+                    // push to bottom
+                    height: 25px;
+                    width: parent.width;
+
+                    Text { text: "1.000.000"; color: Palette.text-muted; font-size: 8px; x: 0;
+                    }
+                    Text { text: "100.000";
+                    color: Palette.text-muted; font-size: 8px; x: parent.width * 0.25; }
+                    Text { text: "10.000";
+                    color: Palette.text-muted; font-size: 8px; x: parent.width * 0.50; }
+                    Text { text: "1.000";
+                    color: Palette.text-muted; font-size: 8px; x: parent.width * 0.75; }
+                    Text { text: "100";
+                    color: Palette.text-muted; font-size: 8px; x: parent.width - 20px; }
+                }
+
+                // X-AXIS TITLE
+                Text {
+                    text: "Vốn hóa thị trường (Tỷ VNĐ)";
+                    color: Palette.text-muted;
+                    font-size: 9px;
+
+                    x: parent.width / 2 - self.width / 2;
+                    y: parent.height - 5px;
+                    // Move slightly below the scale
+                }
+            }
+
+            VerticalLayout {
+                alignment: space-between;
+                width: 20px;
+                Text { text: "2.0"; font-size: 9px; color: Palette.text-muted;
+                }
+                Text { text: "1.5";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "1.0";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "0.5";
+                font-size: 9px; color: Palette.text-muted; }
+                Text { text: "0.0";
+                font-size: 9px; color: Palette.text-muted; }
+            }
+        }
+        
+        HorizontalLayout {
+            alignment: center;
+            spacing: 5px;
+            Text { text: "Chỉ số MA50: Thấp"; font-size: 10px; color: Palette.text-muted;
+            }
+            Rectangle { width: 15px; height: 6px; border-radius: 3px;
+            background: Palette.accent-green; }
+            Rectangle { width: 15px; height: 6px;
+            border-radius: 3px; background: #aaaa00; }
+            Rectangle { width: 15px;
+            height: 6px; border-radius: 3px; background: Palette.accent-red; }
+            Text { text: "Cao";
+            font-size: 10px; color: Palette.text-muted; }
+        }
+    }
+}
+
+// -------------------------------------------------------------------------
+// 4. MAIN LAYOUT
+// -------------------------------------------------------------------------
+export component MP inherits Rectangle {
+    in-out property <int> selected_tab: 3;
+    in property <[RsiData]> rsi_list;
+    in property <[CoinData]> coin_list;
+    // NEW: Property for MA50 list
+    in property <[MaData]> ma_list;
+    // NEW: Property for MA50 Table list
+    in property <[RsiData]> ma_table_list;
+
+    callback sort_rsi14();
+    
+    preferred-width: 1200px;
+    preferred-height: 800px;
+    min-width: 800px;
+    min-height: 400px;
+    
+    background: Palette.bg-color;
+    VerticalLayout {
+        Rectangle {
+            vertical-stretch: 1;
+            HorizontalLayout {
+                // --- Sidebar ---
+                Rectangle {
+                    width: 220px;
+                    // Fixed width sidebar
+                    background: Palette.sidebar-bg;
+                    VerticalLayout {
+                        padding: 20px;
+                        spacing: 20px;
+
+                        Text {
+                            text: "Chỉ báo kỹ thuật";
+                            color: Palette.text-secondary;
+                            font-size: 14px;
+                        }
+
+                        Rectangle {
+                            height: 40px;
+                            background: Palette.accent-blue;
+                            border-radius: 4px;
+                            Text {
+                                text: "RSI và MA";
+                                color: white;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                            TouchArea { mouse-cursor: pointer;
+                            }
+                        }
+
+                        Rectangle { vertical-stretch: 1;
+                        }
+                        Rectangle { height: 20px;
+                        }
+                    }
+                }
+
+                // --- Main Content ---
+                VerticalLayout {
+                    GridLayout {
+      
+                        padding: 10px;
+                        spacing: 10px;
+
+                        // RSI table
+                        Rectangle {
+                            background: Palette.card-bg;
+                            border-radius: 8px;
+                            col: 0; row: 0;
+                            horizontal-stretch: 1; 
+                            vertical-stretch: 1;
+                            VerticalLayout {
+                                padding: 15px;
+                                spacing: 10px;
+
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    SliderCard {} 
+                                    // SliderCard {}
+                                }
+
+                             
+                                TableRow { symbol: "Symbol"; name: "Market Cap"; rsi14: "RSI 14"; rsi21: "Price"; is-header: true;
+                                sort_rsi14 => {root.sort_rsi14()}}
+                                
+                                Text { text: "Items: " + root.rsi_list.length;
+                                color: #888; font-size: 10px; }
+
+                                ListView {
+                                    vertical-stretch: 1;
+                                    for item in root.rsi_list : TableRow {
+                                        symbol: item.symbol;
+                                        name: item.vhtt;
+                                        rsi14: item.rsi14;
+                                        rsi21: item.price;
+                                    }
+                                }
+                            }
+                        }
+
+          
+                        // Chart
+                        RsiHeatmapChart {
+                            coins: root.coin_list;
+                            col: 1; row: 0;
+                            horizontal-stretch: 3; 
+                        }
+
+                        // MA table
+                        Rectangle {
+                            background: Palette.card-bg;
+                            border-radius: 8px;
+                            col: 0; row: 1;
+                            vertical-stretch: 1;
+                            
+                            VerticalLayout {
+                                padding: 15px;
+                                spacing: 10px;
+
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    SliderCard {
+                                        title: "Giá CP so với MA20";
+                                        left-text: "Trên MA";
+                                        right-text: "Dưới MA";
+                                        left-value: 85.1;
+                                        right-value: 14.9;
+                                    }
+                                }
+
+                                TableRow { symbol: "Symbol";
+                                name: "Volume"; rsi14: "RSI 14"; rsi21: "RSI 21"; is-header: true;
+                                sort_rsi14 => {root.sort_rsi14()}}
+                                
+                                ListView {
+                                    // CHANGED: Bind to ma_table_list property
+                                    for item in root.rsi_list : TableRow {
+                                        symbol: item.symbol;
+                                        name: item.vhtt;
+                                        rsi14: item.rsi14;
+                                        rsi21: item.price;
+                                    }
+                                }
+                            }
+                        }
+
+          
+                        // Chart
+                        MaHeatmapChart {
+                            // CHANGED: bind ma_list
+                            coins: root.ma_list;
+                            col: 1;
+                            row: 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

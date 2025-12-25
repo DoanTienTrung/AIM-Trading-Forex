@@ -1,0 +1,142 @@
+import { AbnormalTradeData, Utils } from "../../data_type.slint";
+import { ListView } from "std-widgets.slint";
+
+export component AbnormalTrade inherits Rectangle {
+    in property <[AbnormalTradeData]> data : [
+        { symbol: "GEX", type: "Buy", volume: 1000000, price: 29.35, time: "9:21:31" },
+        { symbol: "DDV", type: "Buy", volume: 1000000, price: 80, time: "9:20:23" },
+        { symbol: "AAA", type: "Sell", volume: 135, price: 7.32, time: "9:20:23" },
+        { symbol: "HVN", type: "Buy", volume: 1000000, price: 435, time: "9:20:23" },
+        { symbol: "CAG", type: "Buy", volume: 1000000, price: 234, time: "9:20:23" },
+        { symbol: "GEX", type: "Buy", volume: 1000000, price: 29.35, time: "9:21:31" },
+        { symbol: "HAH", type: "Buy", volume: 1000000, price: 436, time: "9:20:23" },
+        { symbol: "CAG", type: "Buy", volume: 1000000, price: 234, time: "9:20:23" },
+        { symbol: "HAH", type: "Buy", volume: 1000000, price: 436, time: "9:20:23" },
+        { symbol: "TTA", type: "Sell", volume: 135, price: 89, time: "9:20:23" },
+        { symbol: "HAH", type: "Buy", volume: 2000000, price: 436, time: "9:20:23" },
+        { symbol: "VNM", type: "Buy", volume: 135, price: 123, time: "9:20:23" },
+        { symbol: "BTC", type: "Sell", volume: 135, price: 467, time: "9:20:23" },
+        { symbol: "VNM", type: "Sell", volume: 135, price: 123, time: "9:20:23" },
+        { symbol: "VNM", type: "Sell", volume: 135, price: 123, time: "9:20:23" },
+        { symbol: "BTC", type: "Sell", volume: 135, price: 467, time: "9:20:23" },
+        { symbol: "XAU", type: "Sell", volume: 135, price: 123, time: "9:20:23" },
+        { symbol: "CAG", type: "Buy", volume: 1000000, price: 234, time: "9:20:23" },
+        { symbol: "OIL", type: "Sell", volume: 135, price: 123, time: "9:20:23" },
+    ];
+
+    VerticalLayout {
+        spacing: 0px;
+        
+        // Header
+        Rectangle {
+            height: 40px;
+            background: #2a2a2a;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+
+            Text {
+                text: "GIAO DỊCH LỚN";
+                font-size: 14px;
+                font-weight: 700;
+                color: white;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+        
+        // Column headers
+        Rectangle {
+            height: 32px;
+            background: #333;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                
+                Text {
+                    text: "Cổ Phiếu";
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #aaa;
+                    width: 20%;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Khối Lượng";
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #aaa;
+                    width: 40%;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Giá";
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #aaa;
+                    width: 20%;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Text {
+                    text: "Thời Gian";
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #aaa;
+                    width: 20%;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        
+        // Data rows
+        ListView {
+            for row in data : Rectangle {
+                height: 28px;
+                
+                HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    
+                    Text {
+                        text: row.symbol;
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: white;
+                        width: 20%;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: row.type + " - " + Utils.parse_volume(row.volume);
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: row.type == "Buy" ? #28a745 : (row.type == "Sell" ? #dc3545 : white);
+                        width: 40%;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: row.price.to-fixed(2);
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: white;
+                        width: 20%;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                    Text {
+                        text: row.time;
+                        font-size: 12px;
+                        color: white;
+                        width: 20%;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

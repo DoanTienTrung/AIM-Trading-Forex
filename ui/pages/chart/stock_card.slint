@@ -1,0 +1,152 @@
+import { Theme } from "../../widgets/func_icon.slint";
+import { Button, LineEdit } from "std-widgets.slint";
+import { StockData } from "../../data_type.slint";
+
+export component StockCard inherits Rectangle {
+    callback clicked(string);
+    callback remove_stock(string);
+    in property <StockData> data;
+    in-out property <bool> is_odd: false;
+
+    // Animation state property
+    in-out property <int> blink_active: 0;
+    
+    // Determine base background color
+    background: blink_active == -1 ? rgba(255, 0, 0, 0.3) : (blink_active == 1 ? rgba(0, 255, 0, 0.3) :(is_odd ? #181c27.darker(0.4) : transparent));
+    height: 60px;
+    
+    // Animation for smooth background transitions
+    animate background { duration: 150ms; }
+    
+    states [
+        pressed when touch-area.pressed : {
+            background: Theme.background-pressed;
+        }
+        hover when touch-area.has-hover : {
+            background: Theme.background-hover;
+        }
+    ]
+    
+    // Create a timer for the blinking effect
+    blink-timer := Timer {
+        interval: 500ms;
+        running: blink_active != 0;
+        triggered => {
+            blink_active = 0;
+        }
+    }
+    
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 4px;
+        
+        HorizontalLayout {
+            Text {
+                text: data.symbol;
+                color: #ffffff;
+                font-size: 16px;
+                font-weight: 600;
+                horizontal-alignment: left;
+                vertical-alignment: center;
+            }
+            Text {
+                text: data.price.to-fixed(2);
+                color: data.price == data.ceil-price ? #9c27b0 :  // Purple for ceil price
+                       data.price == data.floor-price ? #64b5f6 :  // Light blue for floor price
+                       data.price == data.ref-price ? #ffeb3b :    // Yellow for ref price
+                       data.price > data.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                font-size: 16px;
+                font-weight: 600;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+        
+        HorizontalLayout {
+            Text {
+                text: data.info;
+                overflow: elide;
+                color: #888888;
+                font-size: 12px;
+                horizontal-alignment: left;
+                vertical-alignment: center;
+            }
+            Text {
+                text: (data.change >= 0 ? "+" : "") + data.change.to-fixed(2) + " / " + 
+                      (data.change-percent >= 0 ? "+" : "") + data.change-percent.to-fixed(2) + "%";
+                color: data.price == data.ceil-price ? #9c27b0 :  // Purple for ceil price
+                data.price == data.floor-price ? #64b5f6 :  // Light blue for floor price
+                data.price == data.ref-price ? #ffeb3b :    // Yellow for ref price
+                data.price > data.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                font-size: 12px;
+                horizontal-alignment: right;
+                vertical-alignment: center;
+            }
+        }
+    }
+    
+    touch-area := TouchArea {
+        clicked => {
+            root.clicked(data.symbol);
+        }
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.middle && event.kind == PointerEventKind.down) {
+                root.remove_stock(data.symbol);
+            }
+        }
+    }
+}
+
+export component AddStockWindow inherits Window {
+    title: "Add New Stock";
+    width: 300px;
+    height: 150px;
+    background: #181c27;
+    visible: false;
+
+    callback add_stock(string);
+    callback focus_stock_input();
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 16px;
+        stock-input := LineEdit {
+            placeholder-text: "Stock name";
+            font-size: 14px;
+            accepted => {
+                if stock-input.text != "" {
+                    add_stock(stock-input.text);
+                    stock-input.text = "";
+                    root.visible = false;
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+
+            Button {
+                text: "Cancel";
+                clicked => { root.visible = false; }
+            }
+
+            Button {
+                text: "Add";
+                primary: true;
+                clicked => {
+                    if stock-input.text != "" {
+                        add_stock(stock-input.text);
+                        stock-input.text = "";
+                        root.visible = false;
+                    }
+                }
+            }
+        }
+    }
+
+    focus_stock_input() => {
+        stock-input.focus();
+    }
+}

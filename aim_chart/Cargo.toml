@@ -1,0 +1,16 @@
+[package]
+name = "aim-chart"
+version = "0.1.0"
+edition = "2024"
+authors = ["tuemb <nvtu96@gmail.com>"]
+description   = "AIM charting library"
+
+[dependencies]
+slint = { version = "1.13.1", default-features = false, features = ["backend-winit", "compat-1-2", "renderer-winit-femtovg"] }
+chrono = { version = "0.4.40", features = ["serde"] }
+plotters = "0.3.7"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+aim-data = { path = "../aim_data" }
+log = "0.4.22"
+env_logger = "0.11.8"

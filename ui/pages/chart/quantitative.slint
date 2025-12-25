@@ -1,0 +1,58 @@
+import { QuantitativeLayout } from "../quantitative/quantitative_layout.slint";
+import { CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, ForexData } from "../../data_type.slint";
+import { SectorRangeSnapshot } from "../quantitative/quantitative_price_trade_heatmap.slint";
+
+export component QuantitativeAnalysis inherits Rectangle {
+    in-out property <[string]> selected_tags: ["ACB", "VPB"];
+    in property <[CorrelationRow]> correlation_rows: [];
+    in property <[string]> correlation_columns: [];
+    in property <[RsiData]> rsi_list;
+    in property <[CoinData]> coin_list;
+    in property <[MaData]> ma_list;
+    in-out property <[SectorRangeSnapshot]> sector_ranges;
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+    
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    callback calculateCorrelation(string);
+    callback sort_rsi14();
+    //return matrix data
+    in property <[ReturnRowData]> return_row_data: [];
+    callback getReturnMatrix(string, string, string);
+    QuantitativeLayout {
+        width: 100%;
+        height: 100%;
+        //binding selected tags
+        selected_tags <=> root.selected_tags;
+        correlation_rows: root.correlation_rows;
+        correlation_columns: root.correlation_columns;
+        return_row_data: root.return_row_data;
+        on_add_tag(tag) => {
+            root.on_add_tag(tag);
+        }   
+        on_remove_tag(index) => {
+            root.on_remove_tag(index);
+        }
+        calculateCorrelation(type) => {
+            root.calculateCorrelation(type);    
+        }
+        getReturnMatrix(period, group, month) => {
+            root.getReturnMatrix(period, group, month);
+        }
+
+        rsi_list: root.rsi_list;
+        coin_list: root.coin_list;
+        ma_list: root.ma_list;
+        sort_rsi14 => {root.sort_rsi14();}
+        sector_ranges <=> root.sector_ranges;
+        // Forex
+        forex_list: root.forex_list;
+        on_group_selected(selected_groups) => {
+            root.on_group_selected(selected_groups);
+        }
+}} 

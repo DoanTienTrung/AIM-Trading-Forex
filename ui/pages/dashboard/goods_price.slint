@@ -1,0 +1,118 @@
+import { GoodsData } from "../../data_type.slint";
+
+export component GoodsPrice inherits Rectangle {
+    in property <[GoodsData]> data : [
+        { name: "Vàng SJC 1L, 10L, 1KG", buy_price: "136,000", sell_price: "138,000" },
+        { name: "Vàng SJC 5 chỉ", buy_price: "136,000", sell_price: "136,020" },
+        { name: "Vàng SJC 0.5 chỉ, 1 chỉ, 2 chỉ", buy_price: "136,000", sell_price: "138,030" },
+        { name: "Vàng nhẫn SJC 99,99% 1 chỉ, 2 chỉ, 5 chỉ", buy_price: "131,500", sell_price: "134,200" },
+        { name: "Vàng nhẫn SJC 99,99% 0.5 chỉ, 0.3 chỉ", buy_price: "131,500", sell_price: "134,200" },
+        { name: "Nữ trang 99,99%", buy_price: "128,700", sell_price: "131,700" },
+        { name: "Nữ trang 99%", buy_price: "125,396", sell_price: "130,396" },
+        { name: "Nữ trang 75%", buy_price: "91,435", sell_price: "98,935" },
+        { name: "Nữ trang 68%", buy_price: "82,215", sell_price: "89,715" },
+        { name: "Nữ trang 61%", buy_price: "72,995", sell_price: "80,495" },
+        { name: "Nữ trang 58,3%", buy_price: "69,439", sell_price: "76,939" },
+        { name: "Nữ trang 41,7%", buy_price: "47,574", sell_price: "55,074" },
+    ];
+
+    background: #1a1a1a;
+    min-width: 400px;
+
+    VerticalLayout {
+        Rectangle {
+            height: 40px;
+            background: #2a2a2a;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+
+            Text {
+                text: "HÀNG HÓA";
+                font-size: 14px;
+                font-weight: 700;
+                color: white;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+        // Header row
+        Rectangle {
+            height: 32px;
+            background: #333;
+            HorizontalLayout {
+                Rectangle {
+                    width: 60%;
+                    background: transparent;
+                    Text {
+                        text: "Loại vàng";
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: #aaa;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+                Rectangle {
+                    width: 20%;
+                    background: transparent;
+                    Text {
+                        text: "Mua vào";
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: #aaa;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+                Rectangle {
+                    width: 20%;
+                    background: transparent;
+                    Text {
+                        text: "Bán ra";
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: #aaa;
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        
+        // Data rows
+        for row in data : Rectangle {
+            height: 28px;
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                Text {
+                    width: 60%;
+                    text: row.name;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: white;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Text {
+                    width: 20%;
+                    text: row.buy_price;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #FFFFFF;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Text {
+                    width: 20%;
+                    text: row.sell_price;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #FFFFFF;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}

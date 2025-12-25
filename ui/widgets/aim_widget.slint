@@ -1,0 +1,269 @@
+
+
+import { VerticalBox } from "std-widgets.slint";
+
+export component AimSearchBar inherits Rectangle {
+    in-out property <string> placeholder-text:"Tìm Kiếm";
+    in property <length> font-size: 12px;
+    height: 25px;
+    background: #2a2a2a;
+    border-radius: 15px;
+    pure function has-focus() -> bool {
+        return search_input.has-focus;
+    }
+    public function clear-input-focus() {
+        search_input.clear-focus();
+    }
+                            
+    callback accepted(string);
+
+    states [
+        focused when search_input.has-focus: {
+            background: #2a2a2a.brighter(0.1);
+            border-color: #ffffff;
+        }
+        hover when search_touch_area.has-hover && !search_input.has-focus: {
+            background: #2a2a2a.brighter(0.05);
+            border-color: #666666;
+        }
+    ]
+                            
+    HorizontalLayout {
+        Rectangle { width: 10px; }        
+        // Search icon
+        VerticalLayout {
+            Rectangle {}
+            Rectangle {
+                width: 16px;
+                height: 16px;
+                Image {
+                    width: 12px;
+                    height: 12px;
+                    source: @image-url("../image/search.svg");
+                    colorize: search_input.has-focus ? #ffffff : #888888;
+                }
+            }
+            Rectangle {}
+        }
+                                
+        Rectangle { width: 4px; }
+                                
+        // Text input area
+        Rectangle {
+            property <string> input_text: "";
+            property <bool> show_placeholder: input_text == "";
+
+            // Text display for measuring
+            text_measure := Text {
+                text: input_text;
+                color: transparent;
+                font-size: root.font-size;
+                x: 0px;
+                visible: false;
+            }
+                                    
+            if show_placeholder: Text {
+                text: root.placeholder-text;
+                horizontal-alignment: left;
+                color: #666666;
+                font-size: root.font-size;
+                x: 0px;
+            }
+                                    
+            if !show_placeholder: Text {
+                text: input_text;
+                horizontal-alignment: left;
+                color: search_input.has-focus ? #ffffff : #666666;
+                font-size: root.font-size;
+                x: 0px;
+            }
+            
+            // Blinking cursor that follows text position
+            if search_input.has-focus: Rectangle {
+                x: show_placeholder ? 0px : text_measure.preferred-width;
+                y: (parent.height - 16px) / 2;
+                width: 1px;
+                height: 16px;
+                
+                states [
+                    visible when Math.mod(animation-tick(), 1000ms) < 500ms: {
+                        background: #ffffff;
+                    }
+                    hidden when Math.mod(animation-tick(), 1000ms) >= 500ms: {
+                        background: transparent;
+                    }
+                ]
+            }
+                                    
+            search_input := TextInput {
+                width: parent.width;
+                height: parent.height;
+                color: transparent;
+                font-size: root.font-size;
+                x: 0px;
+                                        
+                edited => {
+                    parent.input_text = self.text;
+                }
+                                        
+                accepted => {
+                    root.accepted(self.text);
+                    root.placeholder-text = self.text.to-uppercase();
+                    self.text = "";
+                    input_text = "";
+                }
+            }
+        }
+    }
+                            
+    search_touch_area := TouchArea {
+        mouse-cursor: text;
+        clicked => {
+            search_input.focus();
+        }
+    }
+}
+
+export component AimButton inherits Rectangle {
+    in-out property <bool> enabled;
+    in property <string> text: "+ Add Stock";
+
+    callback clicked();
+    background: #19191C; 
+    border-radius: 5px;
+    states [
+        pressed when touch-area.pressed : {
+            background: #19191C.brighter(0.5);
+        }
+
+        hover when touch-area.has-hover: {
+            background: #19191C.brighter(0.25);
+        }
+     ]
+    Text {
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        color: white;
+        font-size: 15px;
+        font-weight: 700;
+        text: root.text;
+    }
+
+    touch-area := TouchArea {
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                root.enabled = true;
+                clicked();
+            }
+        }
+    }
+}
+
+export component PersonalInfo inherits Rectangle {
+    HorizontalLayout {
+        Rectangle {width: 8px;}
+        VerticalLayout {
+            Rectangle {
+                width: 48px;
+                height: 48px;
+                border-radius: 24px;
+                clip: true;
+                Image {
+                    source: @image-url("./../image/trieu.jpg");
+                    image-fit: fill;
+                    width: parent.width;
+                    height: parent.height;
+                }
+            }
+            Rectangle {}
+        }
+        Rectangle {width: 8px;}
+        VerticalLayout {
+            Text {
+                text: "NGUYỄN DƯƠNG TRIỀU";
+                font-size: 14px;
+                color: #FFFFFF;
+            }
+            Text {
+                text: "Account: 123456789";
+                font-size: 12px;
+                color: #999999;
+            }
+        }
+        Rectangle {width: 8px;}
+        VerticalLayout {
+            Rectangle {}
+            Rectangle {
+                width: 1px;
+                background: #595959;
+            }
+            Rectangle {}
+        }
+        Rectangle {width: 16px;}
+        VerticalLayout {
+            Text {
+                text: "LEVEL";
+                font-size: 12px;
+                color: #999999;
+            }
+            Text {
+                text: "VIP 10";
+                font-size: 14px;
+                color: #FFFFFF;
+            }
+        }
+        Rectangle {width: 8px;}
+    }
+}
+
+export component TextButton inherits Rectangle {
+    in-out property <bool> selected: false;
+    in property <string> text: "Biểu Đồ";
+    callback clicked();
+
+    // Glow effect at the bottom
+    Rectangle {
+        width: parent.width * 0.5;
+        height: 1px;
+        y: parent.height - 1px;
+        x: parent.width * 0.25;
+        background: selected ? @radial-gradient(circle, #2DCAFF 34%, #050505 100%) : transparent;
+        border-radius: 1px;
+        opacity: selected ? 1.0 : 0.0;
+    }
+
+    Rectangle {
+        height: parent.height * 2 / 3;
+        border-radius: 20px;
+        states [
+            pressed when touch-area.pressed : {
+                background: #54575e.brighter(0.2);
+            }
+    
+            hover when touch-area.has-hover: {
+                background: #54575e.brighter(0.1);
+            }
+        ]
+        HorizontalLayout {
+            Rectangle {}
+            Text {
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                overflow: clip;
+                color: root.selected?#2DCAFF:#999999;
+                font-size: 14px;
+                text: root.text;
+            }
+            Rectangle {}
+        }
+    
+        touch-area := TouchArea {
+            pointer-event(event) => {
+                if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                    root.selected = true;
+                    clicked();
+                }
+            }
+        }
+    }
+}

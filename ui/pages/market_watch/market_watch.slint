@@ -1,0 +1,845 @@
+import { MarketWatchData, Utils, IndexData, IndexRow } from "../../data_type.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export global ThemeColors {
+    // Define your theme colors here
+    out property <color> advance: #4caf50;
+    out property <color> ceil: #9c27b0;
+    out property <color> ref: #ffeb3b;
+    out property <color> decline: #f44336;
+    out property <color> floor: #64b5f6;
+
+}
+
+component IndexCard inherits Rectangle {
+    background: #1a1a1a;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: #2a2a2a;
+    in property <IndexData> data;
+    in property <IndexRow> index_row;
+    
+    VerticalLayout {
+        padding: 8px;
+        spacing: 4px;
+        
+        // Header with index name and current price
+        HorizontalLayout {
+            alignment: space-between;
+            Text {
+                text: data.symbol;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            Text {
+                text: data.price.to-fixed(2) + " (" + data.change.to-fixed(2) + " " + data.percentage.to-fixed(2) + "%)";
+                color: data.change > 0.0 ? ThemeColors.advance : ThemeColors.decline;
+                font-size: 15px;
+                font-weight: 700;
+            }
+        }
+        
+        // Mini chart
+        Image {
+            source: data.image;
+            image-fit: fill;
+            height: 100px;
+            width: 320px;
+        }
+        
+        // Compact bottom info
+        HorizontalLayout {
+            alignment: space-between;
+            
+            // Left - Market cap and volume  
+            VerticalLayout {
+                Text {
+                    text: data.number + " CP";
+                    color: #ffffff;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+                Text {
+                    text: Utils.parse_volume(index_row.volume) + " TỶ";
+                    color: #cccccc;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+            }
+            
+            // Right - Indicators and status
+            VerticalLayout {
+                Rectangle {}
+                HorizontalLayout {
+                    spacing: 2px;
+                    VerticalLayout {
+                        Rectangle {}
+                        Rectangle {
+                            width: 30px;
+                            height: 15px;
+                            background: ThemeColors.ceil;
+                            border-radius: 2px;
+                            Text {
+                                text: index_row.ceiling;
+                                color: #ffffff;
+                                font-size: 10px;
+                                font-weight: 600;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    Rectangle {
+                        width: 30px;
+                        height: 20px;
+                        background: ThemeColors.advance;
+                        border-radius: 2px;
+                        Text {
+                            text: index_row.advances;
+                            color: #ffffff;
+                            font-size: 12px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    
+                    Rectangle {
+                        width: 30px;
+                        height: 20px;
+                        background: ThemeColors.ref;
+                        border-radius: 2px;
+                        Text {
+                            text: index_row.nochanges;
+                            color: #000000;
+                            font-size: 12px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    
+                    Rectangle {
+                        width: 30px;
+                        height: 20px;
+                        background: ThemeColors.decline;
+                        border-radius: 2px;
+                        Text {
+                            text: index_row.declines;
+                            color: #ffffff;
+                            font-size: 12px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    VerticalLayout {
+                        Rectangle {}
+                        Rectangle {
+                            width: 30px;
+                            height: 15px;
+                            background: ThemeColors.floor;
+                            border-radius: 2px;
+                            Text {
+                                text: index_row.floor;
+                                color: #ffffff;
+                                font-size: 10px;
+                                font-weight: 600;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+                Rectangle {}
+            }
+        }
+    }
+}
+
+component SortableHeader inherits Rectangle {
+    in property <string> title;
+    in property <int> column_index;
+    in property <int> current_sort_column;
+    in property <bool> sort_ascending;
+    in property <bool> right_align: true;
+    callback sort_clicked(int);
+    
+    height: 30px;
+    background: ta_header.has-hover ? #1a1a1a.brighter(0.3) : #1a1a1a;
+    border-color: #333333;
+    border-width: 1px;
+    
+    HorizontalLayout {
+        padding: 5px;
+        Text { 
+            font-size: 14px;
+            text: root.title; 
+            color: #ffffff; 
+            horizontal-alignment: root.right_align ? right : left; 
+            vertical-alignment: center;
+            font-weight: 600;
+        }
+        if (root.current_sort_column == root.column_index) : Text {
+            text: root.sort_ascending ? "↑" : "↓";
+            color: ThemeColors.advance;
+            font-size: 12px;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            width: 15px;
+        }
+    }
+    
+    ta_header := TouchArea {
+        clicked => {
+            root.sort_clicked(root.column_index);
+        }
+        mouse-cursor: pointer;
+    }
+}
+
+export component MarketWatch inherits Rectangle {
+    in-out property <bool> show_percentage: false;
+    in property <[MarketWatchData]> data;
+    in property <[IndexData]> index_data;
+    in property <[IndexRow]> index_row;
+
+    // Sorting properties
+    in-out property <int> sort_column: -1; // -1: no sort
+    in-out property <bool> sort_ascending: true;
+    
+    callback sort_data(int);
+
+    background: #0a0a0a;
+    VerticalLayout {
+        spacing: 16px;
+        padding: 16px;
+        
+        // Enhanced mini charts section
+        Rectangle {
+            background: #111111;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: #333333;
+            
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                
+                HorizontalLayout {
+                    spacing: 10px;
+
+                    for index[i] in index_data:
+                    IndexCard {
+                        data: index_data[i];
+                        index_row: index_row[0].name == index_data[i].symbol ? index_row[0] :
+                                  (index_row[1].name == index_data[i].symbol ? index_row[1] :
+                                  (index_row[2].name == index_data[i].symbol ? index_row[2] : 
+                                  (index_row[3].name == index_data[i].symbol ? index_row[3] :
+                                  (index_row[4].name == index_data[i].symbol ? index_row[4] :
+                                  (index_row[5].name == index_data[i].symbol ? index_row[5] : index_row[6])))));
+                        
+                    }
+                }
+            }
+        }
+        // Enhanced table section
+        Rectangle {
+            background: #111111;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: #333333;
+            
+            VerticalLayout {
+                padding: 16px;
+                spacing: 8px;
+
+                ScrollView {
+                    VerticalLayout {
+                        spacing: 0px;
+                
+                        // Enhanced header
+                        Rectangle {
+                            height: 40px;
+                            background: #1a1a1a;
+                            border-radius: 6px;
+                            drop-shadow-color: #000000.transparentize(0.7);
+                            drop-shadow-blur: 2px;
+                            drop-shadow-offset-y: 1px;
+                            
+                            HorizontalLayout {
+                                padding: 12px;
+                                spacing: 0px;
+                                    SortableHeader { 
+                                        title: "Mã CK"; 
+                                        min-width: 80px; 
+                                        column_index: 0;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        right_align: false;
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "TC"; 
+                                        min-width: 80px; 
+                                        column_index: 1;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Trần"; 
+                                        min-width: 80px; 
+                                        column_index: 2;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Sàn"; 
+                                        min-width: 80px; 
+                                        column_index: 3;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Giá 3"; 
+                                        min-width: 80px; 
+                                        column_index: 4;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 3"; 
+                                        min-width: 80px; 
+                                        column_index: 5;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Giá 2"; 
+                                        min-width: 80px; 
+                                        column_index: 6;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 2"; 
+                                        min-width: 80px; 
+                                        column_index: 7;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Giá 1"; 
+                                        min-width: 80px; 
+                                        column_index: 8;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 1"; 
+                                        min-width: 80px; 
+                                        column_index: 9;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    
+                                    SortableHeader { 
+                                        title: "Giá"; 
+                                        min-width: 80px; 
+                                        column_index: 10;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL"; 
+                                        min-width: 80px; 
+                                        column_index: 11;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    Rectangle {
+                                        min-width: 100px;
+                                        background: transparent;
+                                        HorizontalLayout {
+                                            spacing: 4px;
+                                            SortableHeader { 
+                                                title: "+/-"; 
+                                                min-width: 70px; 
+                                                column_index: 12;
+                                                current_sort_column: root.sort_column;
+                                                sort_ascending: root.sort_ascending;
+                                                sort_clicked(col) => { root.sort_data(col); }
+                                                background: transparent;
+                                                border-color: transparent;
+                                            }
+                                            TouchArea {
+                                                width: 24px;
+                                                height: 24px;
+                                                mouse-cursor: pointer;
+                                                clicked => {
+                                                    root.show-percentage = !root.show-percentage;
+                                                }
+                                                Rectangle {
+                                                    width: 20px;
+                                                    height: 20px;
+                                                    border-radius: 4px;
+                                                    background: root.show-percentage ? ThemeColors.advance : #555555;
+                                                    border-width: 1px;
+                                                    border-color: #777777;
+                                                    Text {
+                                                        text: root.show-percentage ? "%" : "#";
+                                                        color: #ffffff;
+                                                        font-size: 11px;
+                                                        font-weight: 600;
+                                                        horizontal-alignment: center;
+                                                        vertical-alignment: center;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                    
+                                    SortableHeader { 
+                                        title: "Giá 1"; 
+                                        min-width: 80px; 
+                                        column_index: 13;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 1"; 
+                                        min-width: 80px; 
+                                        column_index: 14;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Giá 2"; 
+                                        min-width: 80px; 
+                                        column_index: 15;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 2"; 
+                                        min-width: 80px; 
+                                        column_index: 16;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Giá 3"; 
+                                        min-width: 80px; 
+                                        column_index: 17;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "KL 3"; 
+                                        min-width: 80px; 
+                                        column_index: 18;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Tổng KL"; 
+                                        min-width: 80px; 
+                                        column_index: 19;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Cao"; 
+                                        min-width: 80px; 
+                                        column_index: 20;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                    SortableHeader { 
+                                        title: "Thấp"; 
+                                        min-width: 80px; 
+                                        column_index: 21;
+                                        current_sort_column: root.sort_column;
+                                        sort_ascending: root.sort_ascending;
+                                        sort_clicked(col) => { root.sort_data(col); }
+                                        background: transparent;
+                                        border-color: transparent;
+                                    }
+                                }
+                            }
+                            for stock[idx] in root.data : Rectangle {
+                                height: 25px;
+                                background: ta.has-hover ? #303030 : (Math.mod(idx, 2) == 0 ? #0a0a0a : #151515);
+                    
+                                ta := TouchArea {
+                                    mouse-cursor: pointer;
+                                }
+                    
+                                HorizontalLayout {
+                                    spacing: 1px;
+                                    Text { 
+                                        text: stock.symbol; 
+                                        min-width: 80px; 
+                                        font-weight: 600;
+                                        color: stock.match-price == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.match-price == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.match-price == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.match-price > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: left;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ref-price.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: ThemeColors.ref;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ceil-price.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: ThemeColors.ceil;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.floor-price.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: ThemeColors.floor;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-price3 == 0 ? "" : stock.bid-price3.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price3 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price3 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price3 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price3 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-volume3 == 0 ? "" : Utils.parse_volume(stock.bid-volume3);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price3 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price3 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price3 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price3 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-price2 == 0 ? "" : stock.bid-price2.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price2 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price2 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price2 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price2 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-volume2 == 0 ? "" : Utils.parse_volume(stock.bid-volume2);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price2 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price2 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price2 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price2 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-price1 == 0 ? "" : stock.bid-price1.to-fixed(2); 
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price1 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price1 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price1 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price1 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.bid-volume1 == 0 ? "" : Utils.parse_volume(stock.bid-volume1);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.bid-price1 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.bid-price1 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.bid-price1 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.bid-price1 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                    
+                                    Rectangle {
+                                        min-width: 80px;
+                                        background: ta.has-hover ? #3f3f3f.brighter(0.3) : (Math.mod(idx, 2) == 0 ? #202020 : #3f3f3f);
+                                        Text { 
+                                            text: stock.match-price == 0 ? "" : stock.match-price.to-fixed(2);
+                                            min-width: 80px;
+                                            font-weight: 600;
+                                            color: stock.match-price == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                                  stock.match-price == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                                  stock.match-price == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                                  stock.match-price > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                            horizontal-alignment: right;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                    
+                                    Rectangle {
+                                        min-width: 80px;
+                                        background: ta.has-hover ? #3f3f3f.brighter(0.3) : (Math.mod(idx, 2) == 0 ? #202020 : #3f3f3f);
+                                        Text { 
+                                            text: stock.match-volume == 0 ? "" : Utils.parse_volume(stock.match-volume);
+                                            min-width: 80px;
+                                            font-weight: 600;
+                                            color: stock.match-price == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                                  stock.match-price == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                                  stock.match-price == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                                  stock.match-price > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                            horizontal-alignment: right;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                    
+                                    Rectangle {
+                                        min-width: 80px;
+                                        background: ta.has-hover ? #3f3f3f.brighter(0.3) : (Math.mod(idx, 2) == 0 ? #202020 : #3f3f3f);
+                                        Text { 
+                                            text: stock.change == 0 ? "" : (root.show-percentage ? stock.change-percent.to-fixed(2) + "%" : stock.change.to-fixed(2)); 
+                                            min-width: 80px;
+                                            font-weight: 600;
+                                            color: stock.match-price == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                                  stock.match-price == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                                  stock.match-price == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                                  stock.match-price > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                            horizontal-alignment: right;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                    
+                                    Text { 
+                                        text: stock.ask-price1 == 0 ? "" : stock.ask-price1.to-fixed(2);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price1 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price1 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price1 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price1 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ask-volume1 == 0 ? "" : Utils.parse_volume(stock.ask-volume1);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price1 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price1 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price1 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price1 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ask-price2 == 0 ? "" : stock.ask-price2.to-fixed(2);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price2 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price2 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price2 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price2 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ask-volume2 == 0 ? "" : Utils.parse_volume(stock.ask-volume2);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price2 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price2 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price2 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price2 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ask-price3 == 0 ? "" : stock.ask-price3.to-fixed(2);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price3 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price3 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price3 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price3 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.ask-volume3 == 0 ? "" : Utils.parse_volume(stock.ask-volume3);
+                                        min-width: 80px;
+                                        font-weight: 600;
+                                        color: stock.ask-price3 == stock.ceil-price ? ThemeColors.ceil :  // Purple for ceil price
+                                              stock.ask-price3 == stock.floor-price ? ThemeColors.floor :  // Light blue for floor price
+                                              stock.ask-price3 == stock.ref-price ? ThemeColors.ref :    // Yellow for ref price
+                                              stock.ask-price3 > stock.ref-price ? ThemeColors.advance : ThemeColors.decline;     // Green/Red based on ref price comparison
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.volume == 0 ? "" : Utils.parse_volume(stock.volume);
+                                        min-width: 80px; 
+                                        font-weight: 600;
+                                        color: #ffffff;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.high == 0 ? "" : stock.high.to-fixed(2);
+                                        min-width: 80px; 
+                                        font-weight: 600;
+                                        color: ThemeColors.advance;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                    Text { 
+                                        text: stock.low == 0 ? "" : stock.low.to-fixed(2);
+                                        min-width: 80px; 
+                                        font-weight: 600;
+                                        color: ThemeColors.decline;
+                                        horizontal-alignment: right;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+export component AppWindow inherits Window {
+    in property <[MarketWatchData]> market_watch_data: [
+        {symbol: "VCB", info: "", ref-price: 75.5, ceil-price: 83.1, floor-price: 68.0, 
+         ask-price3: 76.2, ask-volume3: 1500, ask-price2: 76.0, ask-volume2: 2300, ask-price1: 75.8, ask-volume1: 3200,
+         match-price: 76.5, match-volume: 12500, change: 1.0, change-percent: 1.32,
+         bid-price1: 75.6, bid-volume1: 2800, bid-price2: 75.4, bid-volume2: 1900, bid-price3: 75.2, bid-volume3: 1200,
+         volume: 456800, high: 77.2, low: 75.1},
+        {symbol: "VIC", info: "", ref-price: 48.2, ceil-price: 53.0, floor-price: 43.4,
+         ask-price3: 49.1, ask-volume3: 2100, ask-price2: 48.9, ask-volume2: 1800, ask-price1: 48.7, ask-volume1: 2500,
+         match-price: 48.2, match-volume: 8900, change: 0.0, change-percent: 0.0,
+         bid-price1: 48.0, bid-volume1: 1600, bid-price2: 47.8, bid-volume2: 2200, bid-price3: 47.6, bid-volume3: 1400,
+         volume: 234500, high: 49.2, low: 47.8},
+        {symbol: "VNM", info: "", ref-price: 62.8, ceil-price: 69.1, floor-price: 56.5,
+         ask-price3: 63.5, ask-volume3: 1800, ask-price2: 63.2, ask-volume2: 2400, ask-price1: 63.0, ask-volume1: 3100,
+         match-price: 61.9, match-volume: 7800, change: -0.9, change-percent: -1.43,
+         bid-price1: 61.8, bid-volume1: 2100, bid-price2: 61.6, bid-volume2: 1500, bid-price3: 61.4, bid-volume3: 1300,
+         volume: 189300, high: 63.8, low: 61.2},
+        {symbol: "MSN", info: "", ref-price: 95.0, ceil-price: 104.5, floor-price: 85.5,
+         ask-price3: 96.2, ask-volume3: 1200, ask-price2: 95.8, ask-volume2: 1900, ask-price1: 95.5, ask-volume1: 2700,
+         match-price: 97.2, match-volume: 6200, change: 2.2, change-percent: 2.32,
+         bid-price1: 95.2, bid-volume1: 1800, bid-price2: 95.0, bid-volume2: 2300, bid-price3: 94.8, bid-volume3: 1600,
+         volume: 123400, high: 98.1, low: 94.5},
+        {symbol: "HPG", info: "", ref-price: 23.5, ceil-price: 25.9, floor-price: 21.2,
+         ask-price3: 24.1, ask-volume3: 3200, ask-price2: 23.9, ask-volume2: 2800, ask-price1: 23.7, ask-volume1: 4100,
+         match-price: 23.2, match-volume: 15600, change: -0.3, change-percent: -1.28,
+         bid-price1: 23.4, bid-volume1: 3500, bid-price2: 23.2, bid-volume2: 2900, bid-price3: 23.0, bid-volume3: 2100,
+         volume: 678900, high: 24.2, low: 22.9}
+    ];
+    in property <[IndexData]> index_data: [{symbol: "VNINDEX", image: @image-url(""), number: "1,657.75", volume: "34,172,944 TỶ", price: 1657.75, change: 0.0, percentage: 0.0},
+                                           {symbol: "VN30", image: @image-url(""), number: "1,855.08", volume: "17,602,451 TỶ", price: 1855.08, change: 0.0, percentage: 0.0},
+                                           {symbol: "HNX30", image: @image-url(""), number: "598.31", volume: "1,877,414 TỶ", price: 598.31, change: 0.0, percentage: 0.0},
+                                           {symbol: "HNXINDEX", image: @image-url(""), number: "274.18", volume: "6,844,735 TỶ", price: 274.18, change: 0.0, percentage: 0.0}];
+
+    // Market watch sorting properties
+    in-out property <int> market_watch_sort_column: -1;
+    in-out property <bool> market_watch_sort_ascending: true;
+    in-out property <bool> market_watch_show_percentage: false;
+
+    callback sort_market_watch(int);
+
+    MarketWatch {
+        index_data <=> root.index_data;
+        data: market_watch_data;
+        sort_column: root.market_watch_sort_column;
+        sort_ascending: root.market_watch_sort_ascending;
+        show_percentage <=> root.market_watch_show_percentage;
+        sort_data(column) => {
+            if (root.market_watch_sort_column == column) {
+                root.market_watch_sort_ascending = !root.market_watch_sort_ascending;
+            } else {
+                root.market_watch_sort_column = column;
+                root.market_watch_sort_ascending = true;
+            }
+            root.sort_market_watch(column);
+        }
+    }
+}

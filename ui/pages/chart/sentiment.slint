@@ -1,0 +1,106 @@
+import { SentimentMain } from "../sentiment/sentiment_layout.slint";
+export component SentimentAnalysis inherits Rectangle {
+    in property <[ [float] ]> sentiment_chart_array: [
+        [40,45,35,30,30,35,40,45,50,35,40,30,45,40,35,40,30,35,40,30,35,40,30,35,40,45,50,35,40,30],
+        [30,25,40,35,40,30,30,25,20,35,30,45,30,35,40,35,40,30,35,45,40,35,45,40,35,30,25,40,30,35],
+        [30,30,25,35,30,35,30,30,30,30,30,25,25,25,25,25,30,35,25,25,25,25,25,25,25,25,25,25,30,35],
+    ];
+
+    in property <[string]> chart_days: [
+        "01/10","02/10","03/10","04/10","05/10","06/10","07/10","08/10","09/10","10/10",
+        "11/10","12/10","13/10","14/10","15/10","16/10","17/10","18/10","19/10","20/10",
+        "21/10","22/10","23/10","24/10","25/10","26/10","27/10","28/10","29/10","30/10"
+    ];
+    callback onSentimentSearch(text: string);
+    // dữ liệu demo
+    in property <[ { title: string, subtitle: string, score: float, status_labels: [string] } ]> intensity_items: [
+        { title: "Độ Sôi Động", subtitle: "", score: 0.20, status_labels: ["Ít sôi động", "Bình thường", "Rất sôi động"] },
+        { title: "Tâm Lý Thị Trường", subtitle: "", score: 0.65, status_labels: ["Tiêu cực", "Trung lập", "Tích cực"] },
+    ];
+
+    in property <[{symbol: string, name: string, total: int, negative: int, positive: int, neutral: int, row_num: int}]> top_stocks: [
+        { symbol: "GEX", name: "Tập đoàn GELEX", total: 120, negative: 30, positive: 70, neutral: 20, row_num: 1 },
+        { symbol: "VNM", name: "Vinamilk", total: 95, negative: 25, positive: 50, neutral: 20, row_num: 2 },
+        { symbol: "SSI", name: "Chứng khoán SSI", total: 80, negative: 20, positive: 40, neutral: 20, row_num: 3 },
+        { symbol: "FPT", name: "FPT Corp", total: 110, negative: 35, positive: 55, neutral: 20, row_num: 4 },
+        { symbol: "REE", name: "REE Group", total: 70, negative: 15, positive: 35, neutral: 20, row_num: 5 },
+        { symbol: "BVH", name: "Bảo Việt", total: 85, negative: 22, positive: 43, neutral: 20, row_num: 6 },
+        { symbol: "ACB", name: "Ngân hàng ACB", total: 60, negative: 18, positive: 32, neutral: 10, row_num: 7 },
+        { symbol: "MSN", name: "Tập đoàn Masan", total: 75, negative: 20, positive: 40, neutral: 15, row_num: 8 },
+        { symbol: "VIC", name: "Tập đoàn Vingroup", total: 90, negative: 28, positive: 42, neutral: 20, row_num: 9 },
+        { symbol: "HDB", name: "Ngân hàng HDBank", total: 55, negative: 12, positive: 28, neutral: 15, row_num: 10 }
+    ];
+    
+    in property <[ { date: string, time: string, symbol: string, content: string, sentiment: string } ]> rumor_list: [
+        { date: "2025-11-10", time: "10:25", symbol: "GEX", content: "Tập đoàn GELEX sắp có động thái mới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:20", symbol: "VNM", content: "Vinamilk chuẩn bị ra mắt sản phẩm mới", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "10:15", symbol: "SSI", content: "Chứng khoán SSI có thể tăng mạnh trong thời gian tới, đó là điều tích cực nhất từ trước tới nay.", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:10", symbol: "FPT", content: "FPT Corp đang gặp khó khăn về tài chính", sentiment: "Tiêu cực" },
+        { date: "2025-11-10", time: "10:05", symbol: "REE", content: "REE Group có kế hoạch mở rộng thị trường", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "10:00", symbol: "BVH", content: "Bảo Việt sẽ hợp tác với đối tác lớn", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "09:55", symbol: "GEX", content: "Tập đoàn GELEX sắp có động thái mới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:50", symbol: "VNM", content: "Vinamilk chuẩn bị ra mắt sản phẩm mới", sentiment: "Trung lập" },
+        { date: "2025-11-10", time: "09:45", symbol: "SSI", content: "Chứng khoán SSI có thể tăng mạnh trong thời gian tới", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:40", symbol: "FPT", content: "FPT Corp đang gặp khó khăn về tài chính", sentiment: "Tiêu cực" },
+        { date: "2025-11-10", time: "09:35", symbol: "REE", content: "REE Group có kế hoạch mở rộng thị trường", sentiment: "Tích cực" },
+        { date: "2025-11-10", time: "09:30", symbol: "BVH", content: "Bảo Việt sẽ hợp tác với đối tác lớn", sentiment: "Trung lập" }
+    ];
+
+    in property <[{keyword: string, total: int, score: float, row_num: int}]> trending_keywords: [
+        { keyword: "Cổ phiếu công nghệ", total: 150, score: 0.75, row_num: 1 },
+        { keyword: "Thị trường chứng khoán", total: 120, score: 0.60, row_num: 2 },
+        { keyword: "Đầu tư dài hạn", total: 100, score: 0.55, row_num: 3 },
+        { keyword: "Cổ phiếu ngân hàng", total: 90, score: 0.50, row_num: 4 },
+        { keyword: "Chứng khoán phái sinh", total: 80, score: 0.45, row_num: 5 },
+        { keyword: "Quỹ ETF", total: 70, score: 0.40, row_num: 6 },
+        { keyword: "Cổ phiếu bluechip", total: 60, score: 0.35, row_num: 7 },
+        { keyword: "Thị trường phái sinh", total: 50, score: 0.30, row_num: 8 },
+        { keyword: "Cổ phiếu penny", total: 40, score: 0.25, row_num: 9 },
+        { keyword: "Giao dịch ký quỹ", total: 30, score: 0.20, row_num: 10 }
+    ];
+
+    in property <[{date: string, time: string, symbol: string, advise: string, content: string}]> expert_advice : [
+        { date: "2025-11-10", time: "09:35", symbol: "GEX", advise: "Mua", content: "Khuyến nghị mua cổ phiếu GEX do tiềm năng tăng trưởng mạnh trong quý tới." },
+        { date: "2025-11-10", time: "09:30", symbol: "VNM", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu VNM do ổn định trong dài hạn." },
+        { date: "2025-11-10", time: "09:25", symbol: "SSI", advise: "Bán", content: "Khuyến nghị bán cổ phiếu SSI do biến động thị trường ngắn hạn." },
+        { date: "2025-11-10", time: "09:20", symbol: "FPT", advise: "Mua", content: "Khuyến nghị mua cổ phiếu FPT do triển vọng tích cực trong ngành công nghệ." },
+        { date: "2025-11-10", time: "09:15", symbol: "REE", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu REE do ổn định tài chính và kế hoạch mở rộng." },
+        { date: "2025-11-09", time: "09:35", symbol: "GEX", advise: "Mua", content: "Khuyến nghị mua cổ phiếu GEX do tiềm năng tăng trưởng mạnh trong quý tới." },
+        { date: "2025-11-08", time: "09:30", symbol: "VNM", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu VNM do ổn định trong dài hạn." },
+        { date: "2025-11-03", time: "09:25", symbol: "SSI", advise: "Bán", content: "Khuyến nghị bán cổ phiếu SSI do biến động thị trường ngắn hạn." },
+        { date: "2025-11-02", time: "07:45", symbol: "FPT", advise: "Mua", content: "Khuyến nghị mua cổ phiếu FPT do triển vọng tích cực trong ngành công nghệ." },
+        { date: "2025-11-02", time: "07:30", symbol: "REE", advise: "Giữ", content: "Khuyến nghị giữ cổ phiếu REE do ổn định tài chính và kế hoạch mở rộng." }
+    ];
+
+    in property <[ { date: string, time: string, sentiment: string, content: string, symbol:string } ]> all_contents: [
+            { date: "2025-11-10", time: "10:25", sentiment: "Tiêu cực", content: "AE chú ý Lệnh mua lẻ đợi của cá nhân", symbol: "GEX" },
+            { date: "2025-11-10", time: "10:20", sentiment: "Tích cực", content: "Cổ phiếu VNM có dấu hiệu tăng trưởng mạnh mẽ trong quý tới", symbol: "VNM" },
+            { date: "2025-11-10", time: "10:15", sentiment: "Trung lập", content: "Thị trường chứng khoán đang trong giai đoạn biến động, nhà đầu tư cần thận trọng", symbol: "SSI" },
+            { date: "2025-11-10", time: "10:10", sentiment: "Tiêu cực", content: "FPT Corp đang đối mặt với nhiều thách thức trong việc mở rộng thị trường quốc tế", symbol: "FPT" },
+            { date: "2025-11-10", time: "10:05", sentiment: "Tích cực", content: "REE Group công bố kế hoạch mở rộng đầu tư vào lĩnh vực năng lượng tái tạo", symbol: "REE" },
+            { date: "2025-11-10", time: "10:00", sentiment: "Trung lập", content: "Bảo Việt hợp tác với đối tác chiến lược để nâng cao dịch vụ khách hàng", symbol: "BVH" },
+            { date: "2025-11-10", time: "09:55", sentiment: "Tiêu cực", content: "AE chú ý Lệnh mua lẻ đợi của cá nhân", symbol: "GEX" },
+            { date: "2025-11-10", time: "09:50", sentiment: "Tích cực", content: "Cổ phiếu VNM có dấu hiệu tăng trưởng mạnh mẽ trong quý tới", symbol: "VNM" },
+            { date: "2025-11-10", time: "09:45", sentiment: "Trung lập", content: "Thị trường chứng khoán đang trong giai đoạn biến động, nhà đầu tư cần thận trọng", symbol: "SSI" },
+            { date: "2025-11-10", time: "09:40", sentiment: "Tiêu cực", content: "FPT Corp đang đối mặt với nhiều thách thức trong việc mở rộng thị trường quốc tế", symbol: "FPT" },
+            { date: "2025-11-10", time: "09:35", sentiment: "Tích cực", content: "REE Group công bố kế hoạch mở rộng đầu tư vào lĩnh vực năng lượng tái tạo", symbol: "REE" }
+    ];
+    SentimentMain {
+        width: 100%;
+        height: 100%;
+        //data binding
+        intensity_items <=> root.intensity_items;
+        top_stocks <=> root.top_stocks;
+        rumor_list <=> root.rumor_list;
+        trending_keywords <=> root.trending_keywords;
+        expert_advice <=> root.expert_advice;
+        all_contents <=> root.all_contents;
+        //chart data binding
+        sentiment_chart_array <=> root.sentiment_chart_array;
+        chart_days <=> root.chart_days;
+        //callback binding
+        onSentimentSearch(text) => {
+            root.onSentimentSearch(text);
+        }
+    }
+}

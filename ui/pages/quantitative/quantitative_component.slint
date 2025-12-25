@@ -1,0 +1,133 @@
+import { ScrollView, ComboBox } from "std-widgets.slint";
+export component QuanComboBox inherits Rectangle {
+
+    in-out property <int> current-index: 0;
+    in-out property <string> current_value: "A-Z";
+    property <bool> is_open: false;
+    in property <[string]> model: ["Price ↑", "Price ↓", "A-Z"];
+
+    // callback khi chọn item
+    callback on_selected(index: int, text: string);
+    height: 40px;
+    // --- Nút chính (hiển thị item đang chọn) ---
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 4px;
+        border-width: 1px;
+        background: #666;
+    
+        states [
+            pressed when touch-area-sort.pressed: {
+                background: #666.brighter(0.25);
+            }
+            hover when touch-area-sort.has-hover: {
+                background: #666.brighter(0.5);
+            }
+        ]
+        
+        combo:= HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+
+            Text {
+                text: root.current-index >= 0 ? root.model[root.current-index] : "Chọn...";
+                color: #ffffff;
+                font-size: 14px;
+                vertical-alignment: center;
+                horizontal-alignment: left;
+            }
+            
+            Rectangle { width: 10px; } // Spacer
+            
+            VerticalLayout {
+                Rectangle {}
+                Image {
+                    width: root.height / 4;
+                    height: root.height / 4;
+                    source:@image-url("./../../image/up-arrow.svg");
+                    colorize: #ffffff;
+                }
+                Image {
+                    width: root.height / 4;
+                    height: root.height / 4;
+                    source: @image-url("./../../image/down-arrow.svg");
+                    colorize: #ffffff;
+                }
+                Rectangle {}
+            }
+        }
+        
+        touch-area-sort := TouchArea {
+            clicked => {
+                is_open = !is_open;
+            }
+        }
+        
+        // Dropdown list
+        if is_open: Rectangle {
+            x: 0px;
+            y: - (Math.min(model.length, 5) * 36px + 4px);
+            width: Math.max(parent.width, 100px);
+            height: Math.min(model.length, 5) * 36px;
+            background: #2a2a2a;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: #4a4a4a;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: #00000060;
+            drop-shadow-offset-y: -2px;
+            clip: true;
+
+            ScrollView {
+                width: parent.width;
+                height: parent.height;
+                VerticalLayout {
+                    spacing: 0;
+                    for item[i] in root.model: Rectangle {
+                        height: 36px;
+                        background: i == root.current-index ? #444 : #222;
+                        Text { text: item; color: white; x: 8px; y: 8px; font-size: 14px; }
+
+                        states [
+                            pressed when touch-area-item.pressed: {
+                                background: #0c0c0c.brighter(0.5);
+                            }
+                            hover when touch-area-item.has-hover: {
+                                background: #3d3d3d.brighter(0.25);
+                            }
+                        ]
+
+                        touch-area-item := TouchArea {
+                            clicked => {
+                                root.current-index = i;
+                                root.is_open = false;
+                                root.on_selected(i, item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+export component AimImgRadio inherits Rectangle {
+    in-out property <bool> checked: true;
+    height: 24px;
+    width: 24px;
+
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: checked ? @image-url("./../../image/radio_check.png") : @image-url("./../../image/radio_uncheck.png");
+        opacity: checked ? 1.0 : 0.5;
+    }
+
+    TouchArea {
+        width: parent.width;
+        height: parent.height;
+        clicked => {
+            checked = !checked;
+        }
+    }
+}

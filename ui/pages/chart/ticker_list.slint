@@ -1,0 +1,663 @@
+
+import { ListView, ComboBox } from "std-widgets.slint";
+import { StockCard, AddStockWindow } from "stock_card.slint";
+import { AimButton, PersonalInfo } from "../../widgets/aim_widget.slint";
+import { ShortType, StockData, StockGroup, OrderList, Utils } from "../../data_type.slint";
+
+export component PriceTable inherits Rectangle {
+    in-out property <StockData> current_stock;
+
+    height: 150px;
+    VerticalLayout {
+        Rectangle {
+            background: #1F1F1F;
+            height: 40px;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+            HorizontalLayout {
+                Text {
+                    text: "Đặt mua";
+                    font-size: 14px;
+                    font-weight: 800;
+                    vertical-alignment: center;
+                    horizontal-alignment: right;
+                    color: #FFFFFF;
+                }
+                Rectangle {width: 20px;}
+                Text {
+                    text: "Đặt bán";
+                    font-size: 14px;
+                    font-weight: 800;
+                    vertical-alignment: center;
+                    horizontal-alignment: left;
+                    color: #FFFFFF;
+                }
+            }
+        }
+        HorizontalLayout {
+            padding: 15px;
+            VerticalLayout {
+                HorizontalLayout {
+                    Text {
+                        text: Utils.parse_volume(current_stock.bid-volume1);
+                        font-size: 14px;
+                        horizontal-alignment: left;
+                        color: #FFFFFF;
+                    }
+                    Text {
+                        text: current_stock.bid-price1 != 0.0 ? current_stock.bid-price1.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: right;
+                        color: current_stock.bid-price1 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.bid-price1 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.bid-price1 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.bid-price1 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: Utils.parse_volume(current_stock.bid-volume2);
+                        font-size: 14px;
+                        horizontal-alignment: left;
+                        color: #FFFFFF;
+                    }
+                    Text {
+                        text: current_stock.bid-price2 != 0.0 ? current_stock.bid-price2.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: right;
+                        color: current_stock.bid-price2 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.bid-price2 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.bid-price2 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.bid-price2 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: Utils.parse_volume(current_stock.bid-volume3);
+                        font-size: 14px;
+                        horizontal-alignment: left;
+                        color: #FFFFFF;
+                    }
+                    Text {
+                        text: current_stock.bid-price3 != 0.0 ? current_stock.bid-price3.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: right;
+                        color: current_stock.bid-price3 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.bid-price3 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.bid-price3 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.bid-price3 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                }
+            }
+            Rectangle {width: 20px;}
+            VerticalLayout {
+                HorizontalLayout {
+                    Text {
+                        text: current_stock.ask-price1 != 0.0 ? current_stock.ask-price1.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: left;
+                        color: current_stock.ask-price1 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.ask-price1 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.ask-price1 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.ask-price1 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                    Text {
+                        text: Utils.parse_volume(current_stock.ask-volume1);
+                        font-size: 14px;
+                        horizontal-alignment: right;
+                        color: #FFFFFF;
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: current_stock.ask-price2 != 0.0 ? current_stock.ask-price2.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: left;
+                        color: current_stock.ask-price2 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.ask-price2 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.ask-price2 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.ask-price2 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                    Text {
+                        text: Utils.parse_volume(current_stock.ask-volume2);
+                        font-size: 14px;
+                        horizontal-alignment: right;
+                        color: #FFFFFF;
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: current_stock.ask-price3 != 0.0 ? current_stock.ask-price3.to-fixed(2) : "    ";
+                        font-size: 14px;
+                        font-weight: 800;
+                        horizontal-alignment: left;
+                        color: current_stock.ask-price3 == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              current_stock.ask-price3 == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              current_stock.ask-price3 == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              current_stock.ask-price3 > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                    Text {
+                        text: Utils.parse_volume(current_stock.ask-volume3);
+                        font-size: 14px;
+                        horizontal-alignment: right;
+                        color: #FFFFFF;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component OrderTable inherits Rectangle {
+    // in property <[OrderList]> order_list;
+    in property <[OrderList]> order_list: [{
+        time: "10:11:12",
+        price: 15.55,
+        vol: 1000,
+        match-type: "M"
+    },{
+        time: "10:11:12",
+        price: 15.55,
+        vol: 1000,
+        match-type: "M"
+    },{
+        time: "10:11:12",
+        price: 15.55,
+        vol: 1000,
+        match-type: "M"
+    },{
+        time: "10:11:12",
+        price: 15.55,
+        vol: 1000,
+        match-type: "M"
+    },{
+        time: "10:11:12",
+        price: 15.55,
+        vol: 1000,
+        match-type: "M"
+    }];
+    background: #000000;
+    in-out property <StockData> current_stock;
+
+    VerticalLayout {
+        Rectangle {
+            height: 40px;
+            border-radius: 5px;
+            background: #1F1F1F;
+            HorizontalLayout {
+                Text {
+                    text: "Khớp";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: #FFFFFF;
+                }
+                Text {
+                    text: "Giá";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: #FFFFFF;
+                }
+                Text {
+                    text: "KL";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: #FFFFFF;
+                }
+                Text {
+                    text: "B/S";
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    color: #FFFFFF;
+                }
+            }
+        }
+        Rectangle {height: 10px;}
+        ListView {
+            for stock[i] in order_list : Rectangle {
+                background: Math.mod(i, 2) == 1 ? #181c27.darker(0.4) : transparent;
+                HorizontalLayout {
+                    Rectangle { width: 10px;}
+                    Text {
+                        width: 70px;
+                        horizontal-alignment: left;
+                        text: stock.time;
+                        font-size: 14px;
+                        color: #FFFFFF;
+                    }
+                    Text {
+                        width: 70px;
+                        horizontal-alignment: left;
+                        text: stock.price.to-fixed(2);
+                        font-weight: 800;
+                        font-size: 14px;
+                        color: stock.price == current_stock.ceil-price ? #9c27b0 :  // Purple for ceil price
+                              stock.price == current_stock.floor-price ? #64b5f6 :  // Light blue for floor price
+                              stock.price == current_stock.ref-price ? #ffeb3b :    // Yellow for ref price
+                              stock.price > current_stock.ref-price ? #4caf50 : #f44336;     // Green/Red based on ref price comparison
+                    }
+                    Text {
+                        width: 70px;
+                        horizontal-alignment: right;
+                        text: Utils.parse_volume(stock.vol);
+                        font-size: 14px;
+                        color: #FFFFFF;
+                    }
+                    Text {
+                        width: 70px;
+                        horizontal-alignment: right;
+                        text: (stock.match-type == "b")?"M":"B";
+                        font-size: 14px;
+                        color: (stock.match-type == "b")?#4caf50:#f44336;
+                    }
+                    Rectangle { width: 10px;}
+                }
+            }
+        }
+    }
+}
+export component TickerList inherits Rectangle {
+    background: #050505;
+    width: 300px;
+
+    in property <[StockGroup]> stock_groups;
+    in-out property <StockData> current_stock;
+    in property <[OrderList]> order_list;
+    in-out property <bool> is_list_in_update: false;
+    in-out property <string> current_list_name: "MY_LIST";
+    in-out property <bool> dropdown_open: false;
+    in-out property <bool> order_open: true;
+    in-out property <int> selected_group_index: 0;
+    
+    callback add_stock(string, string);
+    callback remove_stock(string, string);
+    callback clicked(string);
+    callback toggle_group(int);
+    callback switch_list(string);
+    callback sort_stocks(ShortType);
+
+    pure function convert_sort_type(type: string) -> ShortType {
+        if (type == "Price ↑") {
+            return ShortType.HighPrice;
+        } else if (type == "Price ↓") {
+            return ShortType.LowPrice;
+        } else if (type == "A-Z") {
+            return ShortType.Alphabet;
+        }
+        return ShortType.None; // Default case
+    }
+    
+    VerticalLayout {
+        Rectangle {
+            height: 56px;
+            background: #19191C;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            VerticalLayout {
+                Rectangle { height: 10px; }
+                PersonalInfo {}
+                Rectangle { height: 10px; }
+            }
+        }
+
+        Rectangle {
+            height: 5px;
+        }
+        
+        // Dropdown header
+        Rectangle {
+            background: #19191C;
+            height: 50px;
+            border-radius: 10px;
+
+            states [
+                pressed when touch-area.pressed : {
+                    background: #19191C.brighter(0.5);
+                }
+        
+                hover when touch-area.has-hover: {
+                    background: #19191C.brighter(0.25);
+                }
+            ]
+            
+            HorizontalLayout {
+                Rectangle {width: 20px;}
+                Text {
+                    text: stock_groups.length > 0 && selected_group_index < stock_groups.length ? 
+                          stock_groups[selected_group_index].group_name : "No Groups Available";
+                    color: #ffffff;
+                    font-size: 16px;
+                    font-weight: 600;
+                    horizontal-alignment: left;
+                    vertical-alignment: center;
+                }
+                Rectangle {} // Spacer
+                Rectangle {
+                    Image {
+                        width: 10px;
+                        height: 10px;
+                        source: !dropdown_open ? @image-url("./../../image/down-arrow.svg") : @image-url("./../../image/up-arrow.svg");
+                        colorize: #ffffff;
+                    }
+                }
+                Rectangle {width: 20px;}
+            }
+            
+            touch-area := TouchArea {
+                clicked => {
+                    dropdown_open = !dropdown_open;
+                }
+            }
+        }
+        
+        Rectangle { height: 10px; }
+        
+        // Scrollable container for stocks from selected group
+        Rectangle {
+            background: transparent;
+            clip: true;
+            
+            if !is_list_in_update && stock_groups.length > 0 && selected_group_index < stock_groups.length: ListView {
+                for stock[stock_idx] in stock_groups[selected_group_index].stocks: StockCard {
+                    data: stock;
+                    blink_active: stock.is-changed;
+                    is_odd: Math.mod(stock_idx, 2) == 1;
+                    clicked(symbol) => {
+                        clicked(symbol);
+                        root.current_stock = stock;
+                    }
+                    remove_stock(symbol) => {
+                        remove_stock(stock_groups[selected_group_index].group_name, symbol);
+                    }
+                }
+            }
+            
+            if is_list_in_update: Rectangle {
+                Text {
+                    text: "Updating" + (Math.mod(animation-tick(), 300ms) < 100ms ? "." : 
+                          Math.mod(animation-tick(), 300ms) < 200ms ? ".." : "...");
+                    color: #ffffff;
+                    font-size: 14px;
+                    font-weight: 500;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            max-height: 30px;
+                    
+            AimButton {
+                text: "+ Add Stock";
+                clicked => {
+                    add-window.visible = true;
+                    add-window.focus_stock_input();
+                }
+            }
+                    
+            // Custom ComboBox for sorting
+            Rectangle {
+                width: 120px;
+                height: 30px;
+                background: #19191C;
+                border-radius: 5px;
+                
+                property <string> current_value: "A-Z";
+                property <bool> is_open: false;
+                property <[string]> model: ["Price ↑", "Price ↓", "A-Z"];
+                
+                states [
+                    pressed when touch-area-sort.pressed: {
+                        background: #19191C.brighter(0.5);
+                    }
+                    hover when touch-area-sort.has-hover: {
+                        background: #19191C.brighter(0.25);
+                    }
+                ]
+                
+                HorizontalLayout {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                    
+                    Text {
+                        text: current_value;
+                        color: #ffffff;
+                        font-size: 14px;
+                        vertical-alignment: center;
+                        horizontal-alignment: left;
+                    }
+                    
+                    Rectangle {} // Spacer
+                    
+                    VerticalLayout {
+                        Rectangle {}
+                        Image {
+                            width: 8px;
+                            height: 8px;
+                            source: !is_open ? @image-url("./../../image/up-arrow.svg") : @image-url("./../../image/down-arrow.svg");
+                            colorize: #ffffff;
+                        }
+                        Rectangle {}
+                    }
+                }
+                
+                touch-area-sort := TouchArea {
+                    clicked => {
+                        is_open = !is_open;
+                    }
+                }
+                
+                // Dropdown list
+                if is_open: Rectangle {
+                    x: 0px;
+                    y: -(model.length * 30px + 2px);
+                    width: parent.width;
+                    height: model.length * 30px;
+                    background: #2a2a2a;
+                    border-radius: 5px;
+                    border-width: 1px;
+                    border-color: #4a4a4a;
+                    drop-shadow-blur: 8px;
+                    drop-shadow-color: #00000060;
+                    drop-shadow-offset-y: -2px;
+                    clip: true;
+                    
+                    VerticalLayout {
+                        for item[idx] in model: Rectangle {
+                            height: 30px;
+                            background: current_value == item ? #0066cc : transparent;
+                            
+                            states [
+                                hover when item-touch-area.has-hover: {
+                                    background: #0066cc.darker(0.3);
+                                }
+                            ]
+                            
+                            HorizontalLayout {
+                                padding-left: 10px;
+                                padding-right: 10px;
+                                
+                                Text {
+                                    text: item;
+                                    color: #ffffff;
+                                    font-size: 14px;
+                                    vertical-alignment: center;
+                                    horizontal-alignment: left;
+                                }
+                            }
+                            
+                            item-touch-area := TouchArea {
+                                clicked => {
+                                    current_value = item;
+                                    is_open = false;
+                                    root.sort_stocks(convert_sort_type(item));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 5px;
+        }
+
+        Rectangle { 
+            background: #1F1F1F;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            height: 10px;
+
+            states [
+                pressed when touch-area-2.pressed : {
+                    background: #1F1F1F.brighter(0.5);
+                }
+
+                hover when touch-area-2.has-hover: {
+                    background: #1F1F1F.brighter(0.25);
+                }
+            ]
+            Image {
+                width: 10px;
+                height: 10px;
+                source: !order_open ? @image-url("./../../image/up-arrow.svg") : @image-url("./../../image/down-arrow.svg");
+                colorize: #ffffff;
+            }
+            touch-area-2 := TouchArea {
+                clicked => {
+                    order_open = !order_open;
+                }
+            }
+        }
+
+        if order_open:
+        Rectangle {
+            VerticalLayout {
+                PriceTable {
+                    current_stock <=> current_stock;
+                }
+                OrderTable {
+                    current_stock <=> current_stock;
+                    order_list <=> order_list;
+                }
+            }
+        } 
+    }
+    
+
+    add-window := AddStockWindow {
+        x: root.x + root.width/2 - self.width/2;
+        y: root.y + root.height/2 - self.height/2;
+        add_stock(stock_name) => {
+            root.add_stock(stock_groups[selected_group_index].group_name, stock_name);
+        }
+    }
+
+    // Dropdown menu as overlay popup
+    if dropdown_open: Rectangle {
+        x: 0px;
+        y: 116px; // Position below header (56px height + 5px spacing + 50px header + 5px padding)
+        width: root.width;
+        height: 300px;
+        background: #2a2a2a;
+        border-radius: 10px;
+        clip: true;
+        drop-shadow-blur: 8px;
+        drop-shadow-color: #00000080;
+        drop-shadow-offset-y: 4px;
+        
+        VerticalLayout {
+            spacing: 1px;
+            padding: 4px;
+
+            // Scrollable container for group items
+            Rectangle {
+                background: transparent;
+                clip: true;
+                
+                ListView {
+                    // Group items from stock_groups
+                    for group[idx] in stock_groups: Rectangle {
+                        height: 40px;
+                        background: selected_group_index == idx ? #0066cc : transparent;
+                        states [
+                            hover when touch-area-dropdown.has-hover: {
+                                background: #0066cc;
+                            }
+                        ]
+                        HorizontalLayout {
+                            Rectangle { width: 15px; }
+                            VerticalLayout {
+                                Rectangle {}
+                                Rectangle {
+                                    width: 30px;
+                                    height: 30px;
+                                    Image {
+                                        width: 20px;
+                                        height: 20px;
+                                        source: idx==0 ? @image-url("./../../image/stock_group/user.svg") :
+                                                idx==1 ? @image-url("./../../image/stock_group/bank.svg") :
+                                                idx==2 ? @image-url("./../../image/stock_group/shark.svg") :
+                                                idx==3 ? @image-url("./../../image/stock_group/oil.svg") :
+                                                idx==4 ? @image-url("./../../image/stock_group/building.svg") :
+                                                idx==5 ? @image-url("./../../image/stock_group/stock.svg") :
+                                                idx==6 ? @image-url("./../../image/stock_group/energy.svg") :
+                                                idx==7 ? @image-url("./../../image/stock_group/sewing.svg") :
+                                                idx==8 ? @image-url("./../../image/stock_group/forging.svg") :
+                                                idx==9 ? @image-url("./../../image/stock_group/seafood.svg") :
+                                                idx==10 ? @image-url("./../../image/stock_group/port.svg") :
+                                                idx==11 ? @image-url("./../../image/stock_group/fertilizer.svg") :
+                                                idx==12 ? @image-url("./../../image/stock_group/insurance.svg") :
+                                                idx==13 ? @image-url("./../../image/stock_group/sugar.svg") :
+                                                idx==14 ? @image-url("./../../image/stock_group/medicine.svg") :
+                                                idx==15 ? @image-url("./../../image/stock_group/factory.svg") :
+                                                idx==16 ? @image-url("./../../image/stock_group/bottle.svg") :
+                                                idx==17 ? @image-url("./../../image/stock_group/construction.svg") :
+                                                idx==18 ? @image-url("./../../image/stock_group/wheat.svg") :
+                                                idx==19 ? @image-url("./../../image/stock_group/condom.svg") :
+                                                @image-url("./../../image/stock_group/bank.svg");
+                                        colorize: #ffffff;
+                                    }
+                                }
+                                Rectangle {}
+                            }
+                            Rectangle { width: 8px; }
+                            Text {
+                                text: group.group_name;
+                                color: #ffffff;
+                                font-size: 14px;
+                                vertical-alignment: center;
+                            }
+                            Rectangle {} // Spacer
+                            
+                            // Show stock count for each group
+                            Text {
+                                text: group.stocks.length + " stocks";
+                                color: #888888;
+                                font-size: 12px;
+                                vertical-alignment: center;
+                            }
+                            Rectangle { width: 15px; }
+                        }
+                        
+                        touch-area-dropdown := TouchArea {
+                            clicked => {
+                                selected_group_index = idx;
+                                current_list_name = group.group_name;
+                                dropdown_open = false;
+                                switch_list(group.group_name);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

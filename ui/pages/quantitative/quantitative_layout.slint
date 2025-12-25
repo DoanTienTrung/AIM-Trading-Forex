@@ -1,0 +1,688 @@
+import { TabWidget, GroupBox, VerticalBox, HorizontalBox, Button, CheckBox, ComboBox, ScrollView, Switch } from "std-widgets.slint";
+import { AimSearchBar } from "../../widgets/aim_widget.slint";
+import { DatePickerPopup, Button, LineEdit } from "std-widgets.slint";
+import { QuantitativeReturnMatrix } from "quantitative_return_matrix.slint";
+import { MultiTagsInput } from "multi_tag_input.slint";
+import { QuanComboBox, AimImgRadio } from "quantitative_component.slint";
+import { CorrelationRow, ReturnRowData } from "../../data_type.slint";
+import { AimSearchBar } from "../../widgets/aim_widget.slint";
+import { MP } from "MP.slint";
+import { Forex } from "forex.slint";
+// MP layout
+import { RsiData, CoinData, MaData, ForexData} from "../../data_type.slint";
+import { QuantitativePriceTradeHeatmap, SectorRangeSnapshot } from "quantitative_price_trade_heatmap.slint";
+export component AimDatePicker inherits Rectangle {
+    in-out property <string> selected_date: "";
+    HorizontalLayout {
+        Rectangle {
+            height: 32px;
+            background: #222;
+            HorizontalLayout {
+                alignment: center;
+                Text {
+                    width: 150px;
+                    text: selected_date == "" ? "Chưa chọn ngày" : selected_date;
+                    color: #ffffff;
+                    font-size: 14px;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+            }
+        }
+        Rectangle {
+            background: #666;
+            border-radius: 6px;
+            date-picker-button := Button {
+                        icon: @image-url("../../image/stock_group/calendar.png");
+                        clicked => {
+                            date-picker.show();
+                        }
+                    }
+        }
+        
+        date-picker := DatePickerPopup {
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height ) / 2;
+            close-policy: PopupClosePolicy.no-auto-close;
+            accepted(date) => {
+                let day_str = date.day < 10 ? "0" + date.day : date.day;
+                let month_str = date.month < 10 ? "0" + date.month : date.month;
+                root.selected_date = day_str + "/" + month_str + "/" + date.year;
+                date-picker.close();
+            }
+            canceled => {
+                date-picker.close();
+            }
+        }
+    }
+}
+export component AssetCorrelationForm inherits Rectangle {
+    width: 600px;
+    background: #181818;
+    in-out property <string> code: "";
+    in-out property <string> start_date: "";
+    in-out property <string> end_date: "";
+    in-out property <string> period: "Daily";
+    callback onCalculate(string, string, string, string);
+
+    VerticalLayout {
+        spacing: 8px;
+        padding: 12px;
+        Rectangle {
+            height: 36px;
+            HorizontalLayout {
+                spacing: 8px;
+                Rectangle { width: 120px; background: transparent; Text { text: "Danh sách mã"; color: #fff; font-size: 14px; vertical-alignment: center; } }
+                Rectangle {
+                    width: 300px;
+                    height: 36px;
+                    background: transparent;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        LineEdit {
+                            text <=> code;
+                            placeholder_text: "Nhập mã chứng khoán";
+                            font-size: 12px;
+                            width: 220px;
+                            height: 36px;
+                        }
+                    }
+                }
+                
+                
+            }
+        }
+        Rectangle {
+            width: 300px;
+            height: 36px;
+            background: transparent;
+            HorizontalLayout {
+                spacing: 8px;
+                Rectangle { width: 120px; background: transparent; Text { text: "Bắt đầu"; color: #fff; font-size: 14px; vertical-alignment: center; } }
+                AimDatePicker {
+                    selected_date <=> start_date;
+                }
+                
+            }
+        }
+        Rectangle {
+            width: 300px;
+            height: 36px;
+            background: transparent;
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Rectangle { width: 120px; background: transparent; Text { text: "Kết thúc"; color: #fff; font-size: 14px; vertical-alignment: center; } }
+                AimDatePicker {
+                    selected_date <=> end_date;
+                }
+                
+            }
+        }
+        Rectangle {
+            width: 300px;
+            height: 36px;
+            background: transparent;
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: center;
+                Rectangle { width: 120px; background: transparent; Text { text: ""; color: #fff; font-size: 14px; vertical-alignment: center; } }
+                Rectangle {
+                    ComboBox {
+                        model: ["Daily", "Weekly", "Monthly"];
+                        current-value <=> period;
+                    }
+                }
+            }
+        }
+        // Hiển thị tổng hợp dữ liệu đã chọn
+        Rectangle {
+            background: transparent;
+            height: 36px;
+            HorizontalLayout {
+                Text {
+                    text: "Đã chọn: " + (code == "" ? "[Mã]" : code) + " | " + (start_date == "" ? "[Bắt đầu]" : start_date) + " - " + (end_date == "" ? "[Kết thúc]" : end_date) + " | " + "[Kỳ: " + period + "]";
+                    color: #ffffff;
+                    font-size: 14px;
+                }
+            }
+        }
+        
+        HorizontalLayout {
+            width: 100px;
+            height: 36px;
+            spacing: 12px;
+            Rectangle { width: 120px; background: transparent; }
+            Button {
+                text: "Tính Toán";
+                clicked => {
+                    onCalculate(code, start_date, end_date, period);
+                }
+            }
+            Button { 
+                text: "Xóa hết"; 
+                clicked => {
+                    code = "";
+                    start_date = "";
+                    end_date = "";
+                    period = "Daily";
+                }
+            }
+        }
+    }
+}
+
+component AssetCorrelationMatrix inherits Rectangle {
+
+    in property <[CorrelationRow]> correlation_rows: [
+        { ticker: "ACB", values: [1.00, 0.76, 0.28, 0.32, -0.10, -0.23] },
+        { ticker: "VPB", values: [0.76, 1.00, 0.19, 0.65, -0.05, -0.13] },
+        { ticker: "TPB", values: [0.88, 0.69, 1.00, 0.87, -0.07, -0.19] },
+        { ticker: "HAG", values: [0.22, 0.65, 0.87, 1.00, -0.09, -0.22] },
+        { ticker: "AAA", values: [-0.10, -0.05, -0.57, -0.09, 1.00, 0.59] },
+        { ticker: "VNM", values: [-0.23, -0.53, -0.59, -0.22, 0.59, 1.00] },
+
+    ];
+    in property <[string]> correlation_columns: ["ACB", "VPB", "TPB", "HAG", "AAA", "VNM"];
+    in-out property <[string]> selected_tags: ["ACB", "VPB"];
+    property <color> bg-normal: #6694aa;
+    property <color> bg-decrease: #8d3131;
+    property <color> bg-increase: #359446;
+    property <color> text-decrease: #be4343;
+    property <color> text-increase: #58d46f;
+    property <bool> tooltip-visible: false;
+    property <string> tooltip-text: "";
+    property <length> tooltip-x: 0px;
+    property <length> tooltip-y: 0px;
+    property <int> current-hovered-index: -1;
+    property <string> selected_correlation_type: "VN30";
+    property <bool> is_checked: false;
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    callback calculateCorrelation(string);
+    VerticalLayout {
+        spacing: 8px;
+        padding-left: 4px;
+        Rectangle {
+            height: 120px;
+            background: transparent;
+            VerticalLayout {
+                spacing: 16px;
+                padding-left: 6px;
+                padding-top: 12px;
+                Text {
+                    text: "Phân tích & Kiểm tra Tương quan Cổ phiếu";
+                    color: white;
+                    font-size: 32px;
+                    font-weight: 700;
+                }
+                Text {
+                    text: "Nhập ít nhất 2 mã cổ phiếu để bắt đầu phân tích (VD: HPG, FPT, VNM...)";
+                    color: white;
+                    font-size: 16px;
+                }
+                Text {
+                    text: "Mã cổ phiếu:";
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 400;
+                }
+            }
+        }
+
+        MultiTagsInput {
+            x: 0;
+            multi_tags <=> selected_tags;
+            on_add_tag(text) => {
+                root.on_add_tag(text);
+            }
+            on_remove_tag(index) => {
+                root.on_remove_tag(index);
+            }
+        }
+        Rectangle {
+            HorizontalLayout {
+                alignment: start;
+                padding-left: 4px;
+                spacing: 12px;
+                Text {
+                    text: "Theo nhóm:";
+                    color: white;
+                    font-size: 14px;
+                    font-weight: 400;
+                    vertical-alignment: center;
+                }
+                Rectangle {
+                    AimImgRadio {
+                        checked <=> root.is_checked;
+                    }
+                }
+                
+                QuanComboBox {
+                    width: 150px;
+                    height: 30px;
+                    model: ["VN30", "BANK", "SECURITIES"];
+                    current-index: 0;
+                    on_selected(index, value) => {    
+                        root.selected_correlation_type = value;
+                    }
+                }
+            }
+            
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            
+            Rectangle {
+                width: 200px;
+                height: 30px;
+                background: #1976d2;
+                border-radius: 8px;
+                border-width: 0px;
+                content := HorizontalLayout {
+                    alignment: start;
+                    spacing: 0;
+                    Rectangle {
+                        width: image.width + 12px;
+                        height: parent.height;
+                        background: transparent;
+                        image := Image {
+                            source: @image-url("../../image/aim-logo.png");
+                            width: 18px;
+                            height: 18px;
+                        }
+                    }
+                    Text {
+                        text: "Tính toán Tương quan";
+                        color: #fff;
+                        font-size: 15px;
+                        font-weight: 600;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
+                }
+                states [
+                    hover when button_area.has-hover: {
+                        background: #2196f3;
+                    }
+                ]
+                button_area:= TouchArea {
+                    clicked => {
+                        calculateCorrelation(is_checked ? root.selected_correlation_type : "tags");
+                    }
+                }
+            }            
+        }
+        Rectangle {
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: #5a5858;
+            VerticalLayout {
+                padding: 2px;
+                spacing: 0px;
+                VerticalBox {
+                    height: 40px;
+                    Text {
+                        vertical-alignment: center;
+                        text: "Ma trận Tương Quan Cổ Phiếu";
+                        color: #e0e0e0;
+                        font-size: 16px;
+                        font-weight: 700;
+                    }
+                }
+                Flickable {
+                    property <length> cell-width: Math.max(80px, (parent.width - 80px - Math.max(1, root.correlation_columns.length) * 2px) / Math.max(1, root.correlation_columns.length));
+                    VerticalLayout {
+                        //header row
+                        Rectangle {
+                            height: 36px;
+                            background: #363535;
+                            border-width: 1px;
+                            border-color: #5a5858;
+                            HorizontalLayout {
+                                spacing: 2px;
+                                Rectangle { width: 80px; background: transparent; Text { text: "Mã CK"; color: #e0e0e0; font-weight: 700; } }
+                                for col in root.correlation_columns: Rectangle { 
+                                        width: cell-width;
+                                        background: transparent; 
+                                        Text { text: col; color: #e0e0e0; font-weight: 700; horizontal-alignment: center; 
+                                    } 
+                                }
+                            }
+                        }
+                        ScrollView {
+                            VerticalLayout {
+                                spacing: 2px;
+                                padding-left: 2px;
+                                padding-right: 2px;
+                                for row[i] in root.correlation_rows: Rectangle {
+                                    height: 36px;
+                                    background: Math.mod(i, 2) == 0 ? #222 : #181818;
+                                    
+                                    HorizontalLayout {
+                                        spacing: 2px;
+                                        alignment: start;
+                                        
+                                        Rectangle { width: 80px; background: transparent; Text { text: row.ticker; color: #fff; horizontal-alignment: center; } }
+                                        for value[j] in row.values: Rectangle {
+                                            width: cell-width;
+                                            property <bool> is-hovered;
+                                            Rectangle {
+                                                width: 60%;
+                                                height: 60%;
+                                                border-radius: 4px;
+                                                background: value >= 1 ? root.bg-normal.transparentize(0.2)
+                                                    : value >= 0.5 ? root.bg-increase.transparentize(0.2)
+                                                    : value >= 0 ? root.bg-increase.transparentize(0.6)
+                                                    : value >= -0.5 ? root.bg-decrease.transparentize(0.6)
+                                                    : root.bg-decrease.transparentize(0.2);
+                                                Text {
+                                                    text: value;
+                                                    color: value < 0 ? root.text-decrease.brighter(1.5) : root.text-increase.brighter(1.5);
+                                                    horizontal-alignment: center;
+                                                }
+                                                states [
+                                                    is-hovered when touch_area.has-hover: {
+                                                        background: value >= 1 ? root.bg-normal.brighter(0.1)
+                                                            : value >= 0.5 ? root.bg-increase.brighter(0.1)
+                                                            : value >= 0 ? root.bg-increase.brighter(0.4)
+                                                            : value >= -0.5 ? root.bg-decrease.brighter(0.4)
+                                                            : root.bg-decrease.brighter(0.1);
+                                                    }
+                                                ]
+                                            }
+                                            touch_area := TouchArea {
+                                                width: parent.width;
+                                                height: parent.height;
+                                                z: 0;
+                                                pointer-event(event) => {
+                                                    if (event.kind == PointerEventKind.move) {
+                                                        tooltip-visible = true;
+                                                        current-hovered-index = j;
+                                                        if (j >= root.correlation_columns.length / 2) {
+                                                            tooltip-x = self.mouse-x + parent.x - 180px;
+                                                        } else {
+                                                            tooltip-x = self.mouse-x + parent.x + 20px;
+                                                        }
+                                                        // tooltip-text = "self.mouse-x: " + self.mouse-x/1px + " | parent.x: " + parent.x/1px + " | self.mouse-y: " + self.mouse-y/1px + "|parent.y: " + parent.y/1px + "\n";
+                                                        tooltip-text = "Tương quan: " + row.ticker + " / " + root.correlation_columns[j] + " | Giá trị: " + value;
+                                                    }
+                                                }
+                                                moved => {
+                                                    tooltip-visible = true;
+                                                    current-hovered-index = j;
+                                                    if (j >= root.correlation_columns.length / 2) {
+                                                        tooltip-x = self.mouse-x + parent.x - 180px;
+                                                    } else {
+                                                        tooltip-x = self.mouse-x + parent.x + 20px;
+                                                    }
+                                                    // tooltip-y = self.mouse-y - 50px;
+                                                    // tooltip-text = "self.mouse-x: " + self.mouse-x/1px + " | parent.x: " + parent.x/1px + " | self.mouse-y: " + self.mouse-y/1px + "|parent.y: " + parent.y/1px + "\n";
+                                                    tooltip-text = "Tương quan: " + row.ticker + " / " + root.correlation_columns[j] + " | Giá trị: " + value;
+                                                }
+                                            }
+                                            
+                                        }
+                                    } 
+                                }
+                            }
+                            
+                        }
+                    }
+                    touch_vertical := TouchArea {
+                        width: parent.width;
+                        height: parent.height;
+                        z: -1; // Place above other touch areas
+                        pointer-event(event) => {
+                            tooltip-visible = true;
+                            tooltip-y = self.mouse-y + parent.y - 50px;
+                            // tooltip-text = "self.mouse-x: " + self.mouse-x/1px + " | parent.x: " + parent.x/1px + " | self.mouse-y: " + self.mouse-y/1px + "|parent.y: " + parent.y/1px + "\n";
+                            // tooltip-text = "Tương quan: " + row.ticker + " / " + root.tickers_correlation_columns[j] + " | Giá trị: " + value;
+                        
+                        }
+                        moved => {
+                            tooltip-visible = true;
+                            tooltip-y = self.mouse-y + parent.y - 50px;
+                            // tooltip-text = "self.mouse-x: " + self.mouse-x/1px + " | parent.x: " + parent.x/1px + " | self.mouse-y: " + self.mouse-y/1px + "|parent.y: " + parent.y/1px + "\n";
+                            // tooltip-text = "Tương quan: " + row.ticker + " / " + root.tickers_correlation_columns[j] + " | Giá trị: " + value;
+                        }
+                    }           
+                }
+            }
+            // Global mouse area to hide tooltip when cursor leaves chart
+            touch_global:= TouchArea {
+                width: parent.width;
+                height: parent.height;
+                z: -2; // Place behind other touch areas
+                
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.move) {
+                        // Check if we're outside the main chart area
+                        if (self.mouse-y < 30px || self.mouse-y > parent.height - 60px || 
+                            self.mouse-x < 20px || self.mouse-x > parent.width - 20px) {
+                            tooltip-visible = false;
+                        }
+                    }
+                }
+                
+                moved => {
+                    // Additional check for smooth hiding
+                    if (self.mouse-y < 30px || self.mouse-y > parent.height - 60px || 
+                        self.mouse-x < 20px || self.mouse-x > parent.width - 20px) {
+                        tooltip-visible = false;
+                    }
+                }
+            }
+
+            tooltip:= Rectangle {
+                visible: tooltip-visible && current-hovered-index >= 0;
+                x: tooltip-x;
+                y: tooltip-y;
+                width: txt.width + 20px;
+                height: 30px;
+                background: rgba(0, 0, 0, 0.9);
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #555;
+                
+                drop-shadow-blur: 10px;
+                drop-shadow-color: rgba(0, 0, 0, 0.3);
+                
+                txt:= Text {
+                    text: root.tooltip-text;
+                    color: white;
+                    font-size: 12px;
+                    x: 10px;
+                    y: 10px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+
+    }
+    
+}
+
+export component HorizontalTabBar {
+    in property <[string]> tabs: ["Asset Correlation", "Price - Trade Heatmap", "Return Matrix", "Technical Indicator", "Basic Statistical", "Technical Indicator Statistics","Foreign Exchange - Forex"];
+    in-out property <int> selected: 0;
+    callback on_tab_selected(index: int);
+    //local variables
+    property <color> bg-tab-selected: #18d6c2;
+    property <color> bg-tab-unselected: #444 ;
+    property <color> bg-tab: #666 ;
+    width: 1200px;
+    height: 40px;
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: bg-tab;
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            width: parent.width;
+            height: parent.height;
+            padding-top: 8px;
+            padding-left: 8px;
+            for tab[i] in root.tabs: Rectangle {
+                height: parent.height - 16px;
+                width:text.width + 20px;
+                background: i == root.selected ? root.bg-tab-selected : transparent;
+                border-radius: 8px;
+                states [
+                    hover when touch_area.has-hover: {
+                        background: i == root.selected ? root.bg-tab-selected : root.bg-tab-unselected;
+                    }
+                ]
+                text:= Text {
+                    text: tab;
+                    color: i == root.selected ? #fff : #e0e0e0;
+                    font-size: 14px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+                touch_area := TouchArea {
+                    clicked => {
+                        root.selected = i;
+                        root.on_tab_selected(i);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+export global GallerySettings {
+    in property <bool> widgets-enabled: true;
+    in property <bool> widgets-read-only: false;
+}
+export component QuantitativeLayout inherits Rectangle {
+    width: 1200px;
+    height: 800px;
+    in-out property <int> selected_tab: 0;
+    in-out property <[string]> selected_tags: ["ACB", "VPB"];
+    in-out property <string> selected_group: "VN30";
+    in property <[CorrelationRow]> correlation_rows: [];
+    in property <[string]> correlation_columns: [];
+
+    in property <[ReturnRowData]> return_row_data: [];
+    callback getReturnMatrix(string, string, string);
+    
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    callback calculateCorrelation(string);
+    //MP layout
+    in property <[RsiData]> rsi_list;
+    in property <[CoinData]> coin_list;
+    in property <[MaData]> ma_list;
+
+    callback sort_rsi14();
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+    // in property <bool> is_loading: false;
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+
+    
+
+    in-out property <[SectorRangeSnapshot]> sector_ranges;
+    VerticalLayout {
+        spacing: 0;
+        HorizontalTabBar {
+            width: parent.width;
+            height: 40px;
+            selected <=> root.selected_tab;
+            on_tab_selected(index) => {
+                root.selected_tab = index;
+            }
+        }
+        Rectangle {
+            width: 100%;
+            height: parent.height - 40px;
+            vertical-stretch: 1;
+            VerticalLayout {
+                width: 100%;
+                padding: 4px;
+
+                AssetCorrelationMatrix {
+                    width: 100%;
+                    height: 95%;
+                    visible: selected_tab == 0;
+                    selected_tags <=> root.selected_tags;
+                    correlation_rows: root.correlation_rows;
+                    correlation_columns: root.correlation_columns;
+                    on_add_tag(text) => {
+                        root.on_add_tag(text);
+                    }
+                    on_remove_tag(index) => {
+                        root.on_remove_tag(index);
+                    }
+                    calculateCorrelation(type) => {
+                        root.calculateCorrelation(type);
+                    }
+                }
+            }
+            VerticalLayout {
+                height: parent.height;
+                width: parent.width;
+                visible: selected_tab == 1;
+               
+                QuantitativePriceTradeHeatmap {
+                    width: parent.width;
+                    sector_ranges: root.sector_ranges;
+                }
+            }
+            
+            VerticalLayout {
+                height: 100%;
+                width: 100%;
+                visible: selected_tab == 2;
+               
+                QuantitativeReturnMatrix {
+                    width: 100%;
+                    height: 100%;
+                    selected_return_tab: 1;
+                    return_row_data: root.return_row_data;
+                    getReturnMatrix(period, group, month) => {
+                        root.getReturnMatrix(period, group, month);
+                    }
+                }
+                
+            }
+            Rectangle {
+                visible: selected_tab == 3;
+                background: #1074f4;
+            }
+            Rectangle {
+                visible: selected_tab == 4;
+                background: #4d2222;
+            }
+            // MP layout
+            Rectangle {
+                visible: selected_tab == 5;
+                MP {
+                    width: 100%;
+                    height: 100%;
+                    rsi_list: root.rsi_list;
+                    coin_list: root.coin_list;
+                    ma_list: root.ma_list;
+                    sort_rsi14 => {root.sort_rsi14();}
+                }
+            }
+            Rectangle {
+                visible: selected_tab == 6;
+                Forex {
+                    forex_list: root.forex_list;
+                    on_group_selected(selected_groups) => {root.on_group_selected(selected-groups);}
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+        }
+
+    }
+}

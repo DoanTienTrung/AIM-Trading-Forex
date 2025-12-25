@@ -1,0 +1,4 @@
+[env]
+SLINT_DEBUG_PERFORMANCE = "refresh_full_speed"
+# change this to your actual path
+SKIA_BINARIES_URL = "file://D:/AIM/aim-trading-pro/skia-binaries/skia-binaries-e551f334ad5cbdf43abf-x86_64-pc-windows-msvc-d3d-gl-pdf-svg-textlayout-vulkan.tar.gz"

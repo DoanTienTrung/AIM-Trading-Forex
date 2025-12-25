@@ -1,0 +1,106 @@
+import {HorizontalBox, VerticalBox, Button } from "std-widgets.slint";
+
+export enum MouseType {
+    Move,
+    Draw,
+    Rectangle,
+    Oval,
+    Line,
+    Arrow,
+    Ruler,
+    Text,
+    HorizontalLine,
+    VerticalLine
+}
+
+export struct UiData {
+    ticker: string,
+    type: MouseType,
+    move_x: int,
+    move_y: int,
+    position_x: int,
+    press_x: int,
+    position_y: int,
+    press_y: int,
+    zoom: int,
+    is_release: bool,
+    is_clean: bool,
+    width: int,
+    height: int,
+    time_frame: string,
+    is_new_time_frame: bool,
+    is_new_stock: bool,
+    is_in_object: bool,
+    is_undo: bool,
+    is_in_update: bool,
+    color: color,
+}
+
+export component AimChart inherits Image {
+    in-out property <UiData> ui_data: {
+        is_release: true,
+        is_in_object: true,
+        color: #ff0000,
+    };
+    image-fit: fill;
+    
+    // Property to store the previous mouse type
+    property <MouseType> previous-type: MouseType.Move;
+    
+    touch := TouchArea {
+        property <float> pressed-pitch;
+        property <float> pressed-yaw;
+
+        pointer-event(event) => {
+            ui_data.height = touch.height / 1px;
+            ui_data.width = touch.width / 1px;
+            ui_data.position-x = touch.mouse-x / 1px;
+            ui_data.position-y = touch.mouse-y / 1px;
+            ui_data.press-x = touch.pressed-x / 1px;
+            ui_data.press-y = touch.pressed-y / 1px;
+            
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) {
+                ui_data.is-release = true;
+                ui_data.type = MouseType.Move;
+            }
+            else if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down){
+                ui_data.is-release = false;
+            }
+            if (event.button == PointerEventButton.right && event.kind == PointerEventKind.down) {
+                ui_data.type = MouseType.Move;
+            }
+        }
+        moved => {
+            if (self.enabled && self.pressed && ui_data.type == MouseType.Move && touch.pressed-x < touch.width - 60px) {
+                ui_data.move-y = (touch.mouse-y - touch.pressed-y)/1px;
+                ui_data.move-x = (touch.mouse-x - touch.pressed-x)/1px;
+            }
+            if (self.enabled && self.pressed && ui_data.type != MouseType.Move ) {
+                ui_data.move-y = 0;
+                ui_data.move-x = 0;
+            }
+        }
+        scroll-event(e) => {
+            ui_data.move-y = 0;
+            ui_data.move-x = 0;
+            
+            if e.delta-y > 0 {
+                ui_data.zoom = -10;
+                return accept;
+            } else if e.delta-y < 0 {
+                ui_data.zoom = 10;
+                return accept;
+            } else {
+                reject
+            }
+        }
+        mouse-cursor: (ui_data.is-in-object && (ui_data.type == MouseType.Move))? MouseCursor.pointer : ((touch.mouse-x < touch.width - 60px)?
+        (ui_data.type == MouseType.Draw) ? MouseCursor.default : 
+        (ui_data.type == MouseType.Move) ? (self.pressed ? MouseCursor.grabbing : MouseCursor.grab) :
+        (ui_data.type == MouseType.Rectangle) ? MouseCursor.crosshair :
+        (ui_data.type == MouseType.Line) ? MouseCursor.crosshair :
+        (ui_data.type == MouseType.Ruler) ? MouseCursor.crosshair:
+        (ui_data.type == MouseType.Text) ? MouseCursor.text :
+        MouseCursor.default : MouseCursor.ns-resize);
+    }
+}

@@ -1,0 +1,52 @@
+// Copyright © SixtyFPS GmbH <info@slint.dev>
+// SPDX-License-Identifier: MIT
+
+import { ComboBox } from "std-widgets.slint";
+import { Orbiter } from "orbiter.slint";
+
+export component AimLogo inherits Rectangle {
+    property <duration> orbitDuration: 5s;
+
+    // Animation drivers
+    property <angle> orbit-animation:  (360deg * animation-tick() / orbitDuration).mod(360deg);
+    property <angle> attack-animation: (360deg * animation-tick() / 20s).mod(360deg);
+
+    // Demo data
+    property <[angle]> offSets: [0deg, 45deg, 90deg, 135deg, 180deg, 225deg, 270deg, 315deg];
+    property <[[angle]]> attacks: [[0deg, 0deg], [45deg, 45deg], [90deg, 90deg], [0deg, 180deg], [45deg, 225deg], [90deg, 270deg]];
+    property <image> aim-logo: @image-url("../image/aim-logo.png");
+
+    animate background {
+        duration: 1000ms;
+        easing: ease-in-out-sine;
+    }
+
+    Rectangle {
+        for offSet in offSets:  Orbiter {
+            state: back;
+            orbit-rotation: orbit-animation;
+            offset: offSet;
+            orbit-attack: attack-animation;
+            source: aim-logo;
+            colorize: white.mix(black, self.scale);
+        }
+    }
+
+    Image {
+        source: aim-logo;
+        width: 20px;
+        colorize: #1161FF;
+    }
+
+    Rectangle {
+        for offSet in offSets:  Orbiter {
+            state: front;
+            orbit-rotation: orbit-animation;
+            offset: offSet;
+            orbit-attack: attack-animation;
+            source: aim-logo;
+            colorize: white.mix(black, self.scale);
+        }
+    }
+
+}

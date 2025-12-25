@@ -1,0 +1,832 @@
+import { Utils } from "../../data_type.slint";
+import { ScrollView } from "std-widgets.slint";
+
+// --- DATA STRUCTURES ---
+export struct MarketCapStock {
+    code: string,
+    price: float,
+    market_cap: float,
+    daily_change: float,
+}
+
+export struct MarketCapOverview {
+    total_market_cap: float,
+    change_24h: float,
+    change_24h_percent: float,
+    trading_volume: int,
+    trading_value: float,
+}
+
+export struct SectorShare {
+    name: string,
+    percent: float,
+    color: color,
+}
+
+export struct SectorTimePoint {
+    label: string,
+    finance: float,
+    real_estate: float,
+    consumer: float,
+    others: float,
+}
+
+export struct SectorRangeSnapshot {
+    label: string,
+    finance_path: string,
+    real_estate_path: string,
+    consumer_path: string,
+    others_path: string,
+    finance_percent: float,
+    real_estate_percent: float,
+    consumer_percent: float,
+    others_percent: float,
+    timeline: [SectorTimePoint],
+}
+
+
+// --- COMPONENTS ---
+
+// 1. Summary Card (Cột Trái)
+component MarketCapSummaryCard inherits Rectangle {
+    in property <string> label: "";
+    in property <string> value: "";
+    in property <string> sub_value: "";
+    in property <color> value_color: #ffffff;
+    in property <color> sub_value_color: #ffffff;
+    
+    height: 75px; // Giảm nhẹ chiều cao để gọn hơn
+    background: #181818;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #333;
+    
+    VerticalLayout {
+        padding: 12px;
+        spacing: 4px;
+        alignment: center;
+        Text {
+            text: label;
+            color: #999;
+            font-size: 11px;
+        }
+        Text {
+            text: value;
+            color: value_color;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        if sub_value != "": Text {
+            text: sub_value;
+            color: sub_value_color;
+            font-size: 13px;
+        }
+    }
+}
+
+// 2. Bar Chart (Cột Giữa - Trên)
+component Top10MarketCapChart inherits Rectangle {
+    in property <[MarketCapStock]> stocks: [];
+    property <float> max-market-cap: stocks.length > 0 ? Math.max(stocks[0].market_cap, 1.0) : 1.0;
+    
+    background: #181818;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #333;
+    
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+        Text {
+            text: "Top 10 Cổ Phiếu Vốn Hóa Lớn Nhất";
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        
+        if root.stocks.length == 0: Rectangle {
+            horizontal-stretch: 1;
+            vertical-stretch: 1;
+            background: transparent;
+            Text {
+                text: "Không có dữ liệu";
+                color: #666;
+                font-size: 13px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        if root.stocks.length > 0: Rectangle {
+            horizontal-stretch: 1;
+            vertical-stretch: 1;
+            background: transparent;
+            HorizontalLayout {
+                spacing: 8px; // Giảm khoảng cách giữa các cột
+                padding-left: 4px;
+                padding-right: 4px;
+                alignment: space-between;
+                
+                for stock[i] in root.stocks: VerticalLayout {
+                    spacing: 6px;
+                    horizontal-stretch: 1; // Chia đều không gian
+                    alignment: start; // Căn đỉnh
+                    
+                    Text {
+                        text: stock.code;
+                        color: #ffffff;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                    }
+                    // Cột Bar
+                    Rectangle {
+                        height: stock.market_cap / root.max-market-cap * 180px + 10px;
+                        background: #1e88e5;
+                        border-radius: 4px;
+                        animate background { duration: 200ms; }
+                    }
+                }
+            }
+        }
+    }
+}
+
+component SectorChartLayer inherits Path {
+    width: 100%;
+    height: 100%;
+    viewbox-x: 0;
+    viewbox-y: 0;
+    viewbox-width: 800;
+    viewbox-height: 600;
+}
+
+// 3. Sector Distribution Chart (Cột Giữa - Dưới)
+component SectorDistributionChart inherits Rectangle {
+    background: #181818;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #333;
+    in property <[SectorRangeSnapshot]> ranges: [];
+    
+    // Animation state
+    property <int> current-index: 0;
+    property <int> prev-index: 0;
+    property <float> anim-progress: 1.0; // 0.0 -> 1.0
+
+    // Helper to get safe index
+    function get-safe-index(idx: int) -> int {
+        return ranges.length == 0 ? 0 : Math.min(Math.max(0, idx), ranges.length - 1);
+    }
+
+    // Current data properties (interpolated or switched)
+    property <int> safe-current-index: get-safe-index(current-index);
+    property <int> safe-prev-index: get-safe-index(prev-index);
+
+    // Paths for Current State
+    property <string> current_finance_path: ranges.length == 0 ? "" : ranges[safe-current-index].finance_path;
+    property <string> current_real_estate_path: ranges.length == 0 ? "" : ranges[safe-current-index].real_estate_path;
+    property <string> current_consumer_path: ranges.length == 0 ? "" : ranges[safe-current-index].consumer_path;
+    property <string> current_others_path: ranges.length == 0 ? "" : ranges[safe-current-index].others_path;
+
+    // Paths for Previous State (for animation)
+    property <string> prev_finance_path: ranges.length == 0 ? "" : ranges[safe-prev-index].finance_path;
+    property <string> prev_real_estate_path: ranges.length == 0 ? "" : ranges[safe-prev-index].real_estate_path;
+    property <string> prev_consumer_path: ranges.length == 0 ? "" : ranges[safe-prev-index].consumer_path;
+    property <string> prev_others_path: ranges.length == 0 ? "" : ranges[safe-prev-index].others_path;
+
+    property <[SectorTimePoint]> current_timeline: ranges.length == 0 ? [] : ranges[safe-current-index].timeline;
+
+    // Data for labels (using current index immediately for text, or could animate numbers too)
+    property <float> current_finance_percent: ranges.length == 0 ? 0.0 : ranges[safe-current-index].finance_percent;
+    property <float> current_real_estate_percent: ranges.length == 0 ? 0.0 : ranges[safe-current-index].real_estate_percent;
+    property <float> current_consumer_percent: ranges.length == 0 ? 0.0 : ranges[safe-current-index].consumer_percent;
+    property <float> current_others_percent: ranges.length == 0 ? 0.0 : ranges[safe-current-index].others_percent;
+
+    // Label positions (dựa trên stacked 100% từ DƯỚI lên: Ngành khác -> Tiêu dùng -> BĐS -> Tài chính)
+    // y = parent.height * ratio (0 = top, 1 = bottom) nên phải đảo 1 - ...
+    property <float> finance_mid_ratio: ranges.length == 0 ? 0.15
+        : 1.0 - (current_others_percent + current_consumer_percent + current_real_estate_percent + current_finance_percent / 2) / 100;
+    property <float> real_estate_mid_ratio: ranges.length == 0 ? 0.35
+        : 1.0 - (current_others_percent + current_consumer_percent + current_real_estate_percent / 2) / 100;
+    property <float> consumer_mid_ratio: ranges.length == 0 ? 0.60
+        : 1.0 - (current_others_percent + current_consumer_percent / 2) / 100;
+    property <float> others_mid_ratio: ranges.length == 0 ? 0.85
+        : 1.0 - (current_others_percent / 2) / 100;
+
+    // Tooltip properties
+    property <length> tooltip-x: 0px;
+    property <length> tooltip-y: 0px;
+    property <float> hover-x-ratio: 0.5;
+    property <string> tooltip-week-label: "Tuần 1";
+    property <float> tooltip-finance: 0.0;
+    property <float> tooltip-real-estate: 0.0;
+    property <float> tooltip-consumer: 0.0;
+    property <float> tooltip-others: 0.0;
+
+    VerticalLayout {
+        spacing: 10px;
+        
+        // Header Area (with padding)
+        VerticalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-top: 16px;
+            spacing: 10px;
+
+            HorizontalLayout {
+                spacing: 8px;
+        Text {
+            text: "Phân Bố Vốn Hóa Theo Ngành";
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+                    horizontal-stretch: 1;
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    for range[index] in root.ranges: Rectangle {
+                        width: 48px;
+                        height: 26px;
+                        border-radius: 4px;
+                        border-width: 1px;
+                        border-color: root.current-index == index ? #1f77ff : #333;
+                        background: root.current-index == index ? #102547 : rgba(20, 20, 20, 0.6);
+                        Text {
+                            text: range.label;
+                            color: root.current-index == index ? #4db7ff : #cccccc;
+                            font-size: 11px;
+                            font-weight: 600;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                        TouchArea {
+                            clicked => {
+                                if (root.current-index != index && root.ranges.length > 0) {
+                                    root.prev-index = root.current-index;
+                                    root.current-index = index;
+                                    // Trigger animation
+                                    root.anim-progress = 0.0;
+                                    root.anim-progress = 1.0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Text {
+                text: "Dữ liệu thời gian thực";
+                color: #818cf8;
+                font-size: 12px;
+            }
+        }
+        
+        // Chart Area (No padding, fills width)
+        if ranges.length == 0: Rectangle {
+            vertical-stretch: 1;
+            horizontal-stretch: 1;
+            background: transparent;
+            Text {
+                text: "Không có dữ liệu ngành";
+                color: #666;
+                font-size: 13px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        if ranges.length > 0: Rectangle {
+            vertical-stretch: 1;
+            horizontal-stretch: 1;
+            background: #0c111d;
+            // Removed border-radius to fill container or keep it if desired but ensure full width
+            // border-radius: 12px; 
+            // border-top-width: 1px; // Not supported
+            // border-color: #1e2533;
+
+            // Top border simulation
+            Rectangle {
+                y: 0;
+                height: 1px;
+                background: #1e2533;
+            }
+            clip: true;
+
+            // Animation Driver
+            Rectangle {
+                width: 0; height: 0;
+                opacity: root.anim-progress;
+                animate opacity { duration: 500ms; easing: ease-in-out; }
+            }
+
+            // --- PREVIOUS STATE LAYERS (Fade Out) ---
+            if root.anim-progress < 1.0: Rectangle {
+                width: 100%; height: 100%;
+                opacity: 1.0 - root.anim-progress;
+                
+                if root.prev_others_path != "": SectorChartLayer {
+                    commands: root.prev_others_path;
+                    fill: @linear-gradient(180deg, #d500f988 0%, #d500f922 100%);
+                    stroke: #b156ff;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.prev_consumer_path != "": SectorChartLayer {
+                    commands: root.prev_consumer_path;
+                    fill: @linear-gradient(180deg, #ff910088 0%, #ff910022 100%);
+                    stroke: #ff9f1a;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.prev_real_estate_path != "": SectorChartLayer {
+                    commands: root.prev_real_estate_path;
+                    fill: @linear-gradient(180deg, #00e67688 0%, #00e67622 100%);
+                    stroke: #00c16a;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.prev_finance_path != "": SectorChartLayer {
+                    commands: root.prev_finance_path;
+                    fill: @linear-gradient(180deg, #2979ff88 0%, #2979ff22 100%);
+                    stroke: #1f77ff;
+                    stroke-width: 3px;
+                    opacity: 0.95;
+                }
+            }
+
+            // --- CURRENT STATE LAYERS (Fade In) ---
+            Rectangle {
+                width: 100%; height: 100%;
+                opacity: root.anim-progress;
+
+                if root.current_others_path != "": SectorChartLayer {
+                    commands: root.current_others_path;
+                    fill: @linear-gradient(180deg, #d500f988 0%, #d500f922 100%);
+                    stroke: #b156ff;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.current_consumer_path != "": SectorChartLayer {
+                    commands: root.current_consumer_path;
+                    fill: @linear-gradient(180deg, #ff910088 0%, #ff910022 100%);
+                    stroke: #ff9f1a;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.current_real_estate_path != "": SectorChartLayer {
+                    commands: root.current_real_estate_path;
+                    fill: @linear-gradient(180deg, #00e67688 0%, #00e67622 100%);
+                    stroke: #00c16a;
+                    stroke-width: 2px;
+                    opacity: 0.95;
+                }
+                if root.current_finance_path != "": SectorChartLayer {
+                    commands: root.current_finance_path;
+                    fill: @linear-gradient(180deg, #2979ff88 0%, #2979ff22 100%);
+                    stroke: #1f77ff;
+                    stroke-width: 3px;
+                    opacity: 0.95;
+                }
+            }
+
+            // Labels (Always visible, positions update instantly for now)
+            Text {
+                x: parent.width * 0.08; y: parent.height * root.finance_mid_ratio;
+                text: "Tài chính " + root.current_finance_percent.to-fixed(1) + "%";
+                color: #4db7ff;
+                font-size: 16px; font-weight: 700;
+            }
+            Text {
+                x: parent.width * 0.10; y: parent.height * root.real_estate_mid_ratio;
+                text: "Bất động sản " + root.current_real_estate_percent.to-fixed(1) + "%";
+                color: #00ffa2;
+                font-size: 14px; font-weight: 700;
+            }
+            Text {
+                x: parent.width * 0.12; y: parent.height * root.consumer_mid_ratio;
+                text: "Tiêu dùng " + root.current_consumer_percent.to-fixed(1) + "%";
+                color: #ffb347;
+                font-size: 14px; font-weight: 700;
+            }
+            Text {
+                x: parent.width * 0.14; y: parent.height * root.others_mid_ratio;
+                text: "Ngành khác " + root.current_others_percent.to-fixed(1) + "%";
+                color: #d899ff;
+                font-size: 14px; font-weight: 700;
+            }
+            
+            // Dashed line at hover position
+            if hover-area.has-hover: Rectangle {
+                x: root.tooltip-x;
+                y: 0px;
+                width: 1px;
+                height: parent.height;
+                background: #4db7ff;
+                opacity: 0.6;
+            }
+            
+            // Tooltip
+            if hover-area.has-hover: Rectangle {
+                x: root.tooltip-x + 20px > parent.width - 200px ? root.tooltip-x - 200px : root.tooltip-x + 20px;
+                y: root.tooltip-y > parent.height - 150px ? root.tooltip-y - 150px : root.tooltip-y;
+                width: 180px;
+                height: 140px;
+                background: rgba(20, 25, 40, 0.95);
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #2a3a5a;
+                
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    Text {
+                        text: root.tooltip-week-label;
+                        color: #4db7ff;
+                        font-size: 13px;
+                        font-weight: 700;
+                    }
+                    Rectangle {
+                        height: 1px;
+                        background: #2a3a5a;
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: #2979ff; y: 4px; }
+                        Text { text: "Tài chính: " + root.tooltip-finance.to-fixed(1) + "%"; color: #cccccc; font-size: 11px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: #00e676; y: 4px; }
+                        Text { text: "Bất động sản: " + root.tooltip-real-estate.to-fixed(1) + "%"; color: #cccccc; font-size: 11px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: #ff9100; y: 4px; }
+                        Text { text: "Tiêu dùng: " + root.tooltip-consumer.to-fixed(1) + "%"; color: #cccccc; font-size: 11px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 8px; height: 8px; border-radius: 4px; background: #d500f9; y: 4px; }
+                        Text { text: "Ngành khác: " + root.tooltip-others.to-fixed(1) + "%"; color: #cccccc; font-size: 11px; }
+                    }
+                }
+            }
+            
+            // TouchArea for hover detection
+            hover-area := TouchArea {
+                width: parent.width;
+                height: parent.height;
+                moved => {
+                    root.tooltip-x = self.mouse-x;
+                    root.tooltip-y = self.mouse-y;
+                    let width = parent.width > 0px ? parent.width : 1px;
+                    let ratio = Math.max(0.0, Math.min(self.mouse-x / width, 0.999));
+                    root.hover-x-ratio = ratio;
+                    if root.current_timeline.length > 0 {
+                        let index = Math.round(ratio * (root.current_timeline.length - 1));
+                        let point = root.current_timeline[index];
+                        root.tooltip-week-label = point.label;
+                        root.tooltip-finance = point.finance;
+                        root.tooltip-real_estate = point.real_estate;
+                        root.tooltip-consumer = point.consumer;
+                        root.tooltip-others = point.others;
+                    } else {
+                        root.tooltip-week-label = "Chưa có dữ liệu";
+                        root.tooltip-finance = root.current_finance_percent;
+                        root.tooltip-real_estate = root.current_real_estate_percent;
+                        root.tooltip-consumer = root.current_consumer_percent;
+                        root.tooltip-others = root.current_others_percent;
+                    }
+                }
+            }
+        }
+
+        // Legend (With padding)
+        Rectangle {
+            height: 32px;
+            background: transparent;
+            HorizontalLayout {
+                padding-left: 16px;
+                padding-right: 16px;
+                padding-bottom: 8px;
+                spacing: 24px;
+                Rectangle {
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #1f77ff; }
+                        Text { text: "Tài chính (" + root.current_finance_percent.to-fixed(1) + "%)"; color: #cccccc; font-size: 12px; }
+                    }
+                }
+                Rectangle {
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #00c16a; }
+                        Text { text: "Bất động sản (" + root.current_real_estate_percent.to-fixed(1) + "%)"; color: #cccccc; font-size: 12px; }
+                    }
+                }
+                Rectangle {
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #ff9f1a; }
+                        Text { text: "Tiêu dùng (" + root.current_consumer_percent.to-fixed(1) + "%)"; color: #cccccc; font-size: 12px; }
+                    }
+                }
+                Rectangle {
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Rectangle { width: 12px; height: 12px; border-radius: 6px; background: #b156ff; }
+                        Text { text: "Ngành khác (" + root.current_others_percent.to-fixed(1) + "%)"; color: #cccccc; font-size: 12px; }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 4. Table (Cột Phải)
+component TopMarketCapTable inherits Rectangle {
+    in property <[MarketCapStock]> stocks: [];
+    
+    background: #181818;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #333;
+    
+    VerticalLayout {
+        spacing: 0;
+        
+        // Header Bảng
+        Rectangle {
+            height: 48px;
+            background: transparent;
+            Text {
+                x: 16px;
+                text: "Chi Tiết Top 20 Cổ Phiếu";
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+        }
+        
+        // Dòng Tiêu Đề Cột
+        Rectangle {
+            height: 36px;
+            background: #222;
+            border-color: #333;
+            HorizontalLayout {
+                spacing: 0;
+                // Tổng width phải <= width của container (440px)
+                // 70 + 80 + 130 + 80 = 360px -> Rất dư dả
+                
+                Rectangle { width: 70px; Text { text: "Mã"; color: #999; font-size: 12px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; } }
+                Rectangle { width: 80px; Text { width: parent.width; text: "Giá"; color: #999; font-size: 12px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center;} }
+                Rectangle { width: 140px; Text { width: parent.width; text: "Vốn Hóa (tỷ)"; color: #999; font-size: 12px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center;} }
+                Rectangle { width: 80px; Text { x: 8px; width: parent.width - 12px; text: "%D"; color: #999; font-size: 12px; font-weight: 700; horizontal-alignment: right; vertical-alignment: center;} }
+            }
+            Rectangle {
+                x: 0px;
+                y: parent.height - 1px;
+                width: parent.width;
+                height: 1px;
+                background: #333;
+            }
+        }
+        
+        // Nội dung cuộn
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: 0;
+                for stock[i] in root.stocks: Rectangle {
+                    height: 36px;
+                    background: Math.mod(i, 2) == 0 ? #1e1e1e : #181818;
+                    
+                    HorizontalLayout {
+                        spacing: 0;
+                        Rectangle { 
+                            width: 70px; 
+                            Text { text: stock.code; color: #5dd0ff; font-weight: 700; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; } 
+                        }
+                        Rectangle { 
+                            width: 80px; 
+                            Text { width: parent.width; text: stock.price.to-fixed(1); color: #fff; font-size: 13px; horizontal-alignment: right; vertical-alignment: center; } 
+                        }
+                        Rectangle { 
+                            width: 140px; 
+                            Text { width: parent.width; text: Utils.parse_volume(Math.round(stock.market_cap)); color: #fff; font-size: 13px; horizontal-alignment: right; vertical-alignment: center; } 
+                        }
+                        Rectangle { 
+                            width: 80px; 
+                            Text { 
+                                x: 8px;
+                                width: parent.width - 12px;
+                                text: (stock.daily_change >= 0 ? "+" : "") + stock.daily_change.to-fixed(2) + "%"; 
+                                color: stock.daily_change > 0 ? #00c16a : stock.daily_change < 0 ? #ff4d4f : #b3b0b0; 
+                                font-size: 13px;
+                                horizontal-alignment: right;
+                                vertical-alignment: center;
+                            } 
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// --- MAIN COMPONENT ---
+export component QuantitativePriceTradeHeatmap inherits Rectangle {
+    width: 1280px;
+    height: 720px;
+    preferred-width: 1280px;
+    preferred-height: 720px;
+    background: transparent;
+    
+    // Properties dữ liệu (giữ nguyên như cũ)
+    in property <MarketCapOverview> overview: {
+        total_market_cap: 5834192.0, change_24h: 31789.0, change_24h_percent: 0.55, trading_volume: 879123456, trading_value: 21567.0
+    };
+    in property <[MarketCapStock]> top10_stocks: [
+        { code: "VCB", price: 84.5, market_cap: 450320.0, daily_change: -0.47 },
+        { code: "BID", price: 45.2, market_cap: 257015.0, daily_change: 0.00 },
+        { code: "HPG", price: 28.5, market_cap: 165890.0, daily_change: 1.25 },
+        { code: "FPT", price: 131.2, market_cap: 166420.0, daily_change: 2.80 },
+        { code: "VPB", price: 18.5, market_cap: 147200.0, daily_change: -1.07 },
+        { code: "VIC", price: 42.9, market_cap: 164150.0, daily_change: 0.23 },
+        { code: "MSN", price: 74.5, market_cap: 106800.0, daily_change: -0.92 },
+        { code: "VNM", price: 67.0, market_cap: 139950.0, daily_change: 0.00 },
+        { code: "GAS", price: 75.9, market_cap: 145000.0, daily_change: 0.13 },
+        { code: "CTG", price: 32.5, market_cap: 174200.0, daily_change: -1.22 }
+    ];
+    in property <[MarketCapStock]> top20_stocks: [
+        { code: "VCB", price: 84.5, market_cap: 450320.0, daily_change: -0.47 },
+        { code: "BID", price: 45.2, market_cap: 257015.0, daily_change: 0.00 },
+        { code: "HPG", price: 28.5, market_cap: 165890.0, daily_change: 1.25 },
+        { code: "FPT", price: 131.2, market_cap: 166420.0, daily_change: 2.80 },
+        { code: "VPB", price: 18.5, market_cap: 147200.0, daily_change: -1.07 },
+        { code: "VIC", price: 42.9, market_cap: 164150.0, daily_change: 0.23 },
+        { code: "MSN", price: 74.5, market_cap: 106800.0, daily_change: -0.92 },
+        { code: "VNM", price: 67.0, market_cap: 139950.0, daily_change: 0.00 },
+        { code: "GAS", price: 75.9, market_cap: 145000.0, daily_change: 0.13 },
+        { code: "CTG", price: 32.5, market_cap: 174200.0, daily_change: -1.22 },
+        { code: "GVR", price: 34.0, market_cap: 136000.0, daily_change: 2.10 },
+        { code: "VHM", price: 41.1, market_cap: 178700.0, daily_change: 0.60 },
+        { code: "MBB", price: 23.0, market_cap: 121300.0, daily_change: -0.43 },
+        { code: "ACB", price: 28.0, market_cap: 108500.0, daily_change: 0.36 },
+        { code: "MWG", price: 62.2, market_cap: 90700.0, daily_change: 1.97 },
+        { code: "TCB", price: 45.0, market_cap: 158300.0, daily_change: -1.10 },
+        { code: "SSB", price: 21.9, market_cap: 54000.0, daily_change: 0.00 },
+        { code: "STB", price: 30.2, market_cap: 56500.0, daily_change: 0.64 },
+        { code: "VRE", price: 21.0, market_cap: 48500.0, daily_change: -1.41 },
+        { code: "VJC", price: 102.0, market_cap: 55200.0, daily_change: 0.00 }
+    ];
+    in property <[SectorRangeSnapshot]> sector_ranges: [
+        {
+            label: "1T",
+            finance_path: "M 0.0 0.0 C 36.4 0.0, 36.4 0.0, 72.7 0.0 C 109.1 0.0, 109.1 0.0, 145.5 0.0 C 181.8 0.0, 181.8 0.0, 218.2 0.0 C 254.5 0.0, 254.5 0.0, 290.9 0.0 C 327.3 0.0, 327.3 0.0, 363.6 0.0 C 400.0 0.0, 400.0 0.0, 436.4 0.0 C 472.7 0.0, 472.7 0.0, 509.1 0.0 C 545.5 0.0, 545.5 0.0, 581.8 0.0 C 618.2 0.0, 618.2 0.0, 654.5 0.0 C 690.9 0.0, 690.9 0.0, 727.3 0.0 C 763.6 0.0, 763.6 0.0, 800.0 0.0 L 800.0 200.2 C 763.6 200.2, 763.6 189.3, 727.3 189.3 C 690.9 189.3, 690.9 198.1, 654.5 198.1 C 618.2 198.1, 618.2 206.1, 581.8 206.1 C 545.5 206.1, 545.5 210.0, 509.1 210.0 C 472.7 210.0, 472.7 224.0, 436.4 224.0 C 400.0 224.0, 400.0 232.3, 363.6 232.3 C 327.3 232.3, 327.3 218.1, 290.9 218.1 C 254.5 218.1, 254.5 224.0, 218.2 224.0 C 181.8 224.0, 181.8 235.6, 145.5 235.6 C 109.1 235.6, 109.1 232.0, 72.7 232.0 C 36.4 232.0, 36.4 220.0, 0.0 220.0 Z",
+            real_estate_path: "M 0.0 220.0 C 36.4 220.0, 36.4 232.0, 72.7 232.0 C 109.1 232.0, 109.1 235.6, 145.5 235.6 C 181.8 235.6, 181.8 224.0, 218.2 224.0 C 254.5 224.0, 254.5 218.1, 290.9 218.1 C 327.3 218.1, 327.3 232.3, 363.6 232.3 C 400.0 232.3, 400.0 224.0, 436.4 224.0 C 472.7 224.0, 472.7 210.0, 509.1 210.0 C 545.5 210.0, 545.5 206.1, 581.8 206.1 C 618.2 206.1, 618.2 198.1, 654.5 198.1 C 690.9 198.1, 690.9 189.3, 727.3 189.3 C 763.6 189.3, 763.6 200.2, 800.0 200.2 L 800.0 311.4 C 763.6 311.4, 763.6 299.9, 727.3 299.9 C 690.9 299.9, 690.9 327.0, 654.5 327.0 C 618.2 327.0, 618.2 313.7, 581.8 313.7 C 545.5 313.7, 545.5 331.3, 509.1 331.3 C 472.7 331.3, 472.7 314.7, 436.4 314.7 C 400.0 314.7, 400.0 351.9, 363.6 351.9 C 327.3 351.9, 327.3 367.2, 290.9 367.2 C 254.5 367.2, 254.5 363.6, 218.2 363.6 C 181.8 363.6, 181.8 358.3, 145.5 358.3 C 109.1 358.3, 109.1 339.5, 72.7 339.5 C 36.4 339.5, 36.4 316.4, 0.0 316.4 Z",
+            consumer_path: "M 0.0 316.4 C 36.4 316.4, 36.4 339.5, 72.7 339.5 C 109.1 339.5, 109.1 358.3, 145.5 358.3 C 181.8 358.3, 181.8 363.6, 218.2 363.6 C 254.5 363.6, 254.5 367.2, 290.9 367.2 C 327.3 367.2, 327.3 351.9, 363.6 351.9 C 400.0 351.9, 400.0 314.7, 436.4 314.7 C 472.7 314.7, 472.7 331.3, 509.1 331.3 C 545.5 331.3, 545.5 313.7, 581.8 313.7 C 618.2 313.7, 618.2 327.0, 654.5 327.0 C 690.9 327.0, 690.9 299.9, 727.3 299.9 C 763.6 299.9, 763.6 311.4, 800.0 311.4 L 800.0 411.0 C 763.6 411.0, 763.6 408.8, 727.3 408.8 C 690.9 408.8, 690.9 420.2, 654.5 420.2 C 618.2 420.2, 618.2 415.4, 581.8 415.4 C 545.5 415.4, 545.5 421.7, 509.1 421.7 C 472.7 421.7, 472.7 429.8, 436.4 429.8 C 400.0 429.8, 400.0 429.1, 363.6 429.1 C 327.3 429.1, 327.3 439.0, 290.9 439.0 C 254.5 439.0, 254.5 430.0, 218.2 430.0 C 181.8 430.0, 181.8 436.8, 145.5 436.8 C 109.1 436.8, 109.1 433.5, 72.7 433.5 C 36.4 433.5, 36.4 424.4, 0.0 424.4 Z",
+            others_path: "M 0.0 424.4 C 36.4 424.4, 36.4 433.5, 72.7 433.5 C 109.1 433.5, 109.1 436.8, 145.5 436.8 C 181.8 436.8, 181.8 430.0, 218.2 430.0 C 254.5 430.0, 254.5 439.0, 290.9 439.0 C 327.3 439.0, 327.3 429.1, 363.6 429.1 C 400.0 429.1, 400.0 429.8, 436.4 429.8 C 472.7 429.8, 472.7 421.7, 509.1 421.7 C 545.5 421.7, 545.5 415.4, 581.8 415.4 C 618.2 415.4, 618.2 420.2, 654.5 420.2 C 690.9 420.2, 690.9 408.8, 727.3 408.8 C 763.6 408.8, 763.6 411.0, 800.0 411.0 L 800.0 600.0 C 763.6 600.0, 763.6 600.0, 727.3 600.0 C 690.9 600.0, 690.9 600.0, 654.5 600.0 C 618.2 600.0, 618.2 600.0, 581.8 600.0 C 545.5 600.0, 545.5 600.0, 509.1 600.0 C 472.7 600.0, 472.7 600.0, 436.4 600.0 C 400.0 600.0, 400.0 600.0, 363.6 600.0 C 327.3 600.0, 327.3 600.0, 290.9 600.0 C 254.5 600.0, 254.5 600.0, 218.2 600.0 C 181.8 600.0, 181.8 600.0, 145.5 600.0 C 109.1 600.0, 109.1 600.0, 72.7 600.0 C 36.4 600.0, 36.4 600.0, 0.0 600.0 Z",
+            finance_percent: 42.5,
+            real_estate_percent: 18.2,
+            consumer_percent: 15.8,
+            others_percent: 23.5,
+            timeline: [
+                { label: "Dữ liệu tuần 1", finance: 42.5, real_estate: 18.2, consumer: 15.8, others: 23.5 },
+                { label: "Dữ liệu tuần 2", finance: 42.9, real_estate: 18.0, consumer: 15.6, others: 23.5 },
+                { label: "Dữ liệu tuần 3", finance: 43.3, real_estate: 17.9, consumer: 15.4, others: 23.4 },
+            ],
+        },
+        {
+            label: "3T",
+            finance_path: "M 0.0 0.0 C 36.4 0.0, 72.7 0.0, 109.1 2.0 C 145.5 4.0, 181.8 6.0, 218.2 4.0 C 254.5 2.0, 290.9 0.0, 327.3 2.0 C 363.6 4.0, 400.0 8.0, 436.4 12.0 C 472.7 16.0, 509.1 20.0, 545.5 18.0 C 581.8 16.0, 618.2 8.0, 654.5 6.0 C 690.9 4.0, 727.3 6.0, 763.6 8.0 C 781.8 9.0, 790.9 10.0, 800.0 12.0 L 800.0 210.0 C 763.6 216.0, 727.3 222.0, 690.9 226.0 C 654.5 230.0, 618.2 232.0, 581.8 234.0 C 545.5 236.0, 509.1 238.0, 472.7 242.0 C 436.4 246.0, 400.0 252.0, 363.6 256.0 C 327.3 260.0, 290.9 262.0, 254.5 266.0 C 218.2 270.0, 181.8 276.0, 145.5 278.0 C 109.1 280.0, 72.7 278.0, 36.4 272.0 C 24.2 270.0, 12.1 268.0, 0.0 266.0 Z",
+            real_estate_path: "M 0.0 266.0 C 12.1 268.0, 24.2 270.0, 36.4 272.0 C 72.7 278.0, 109.1 280.0, 145.5 278.0 C 181.8 276.0, 218.2 270.0, 254.5 266.0 C 290.9 262.0, 327.3 260.0, 363.6 256.0 C 400.0 252.0, 436.4 246.0, 472.7 242.0 C 509.1 238.0, 545.5 236.0, 581.8 234.0 C 618.2 232.0, 654.5 230.0, 690.9 226.0 C 727.3 222.0, 763.6 216.0, 800.0 210.0 L 800.0 336.0 C 763.6 344.0, 727.3 352.0, 690.9 356.0 C 654.5 360.0, 618.2 362.0, 581.8 364.0 C 545.5 366.0, 509.1 368.0, 472.7 372.0 C 436.4 376.0, 400.0 382.0, 363.6 386.0 C 327.3 390.0, 290.9 392.0, 254.5 396.0 C 218.2 400.0, 181.8 406.0, 145.5 408.0 C 109.1 410.0, 72.7 408.0, 36.4 402.0 C 24.2 400.0, 12.1 398.0, 0.0 396.0 Z",
+            consumer_path: "M 0.0 396.0 C 12.1 398.0, 24.2 400.0, 36.4 402.0 C 72.7 408.0, 109.1 410.0, 145.5 408.0 C 181.8 406.0, 218.2 400.0, 254.5 396.0 C 290.9 392.0, 327.3 390.0, 363.6 386.0 C 400.0 382.0, 436.4 376.0, 472.7 372.0 C 509.1 368.0, 545.5 366.0, 581.8 364.0 C 618.2 362.0, 654.5 360.0, 690.9 356.0 C 727.3 352.0, 763.6 344.0, 800.0 336.0 L 800.0 440.0 C 763.6 448.0, 727.3 454.0, 690.9 458.0 C 654.5 462.0, 618.2 464.0, 581.8 466.0 C 545.5 468.0, 509.1 470.0, 472.7 474.0 C 436.4 478.0, 400.0 484.0, 363.6 488.0 C 327.3 492.0, 290.9 494.0, 254.5 498.0 C 218.2 502.0, 181.8 508.0, 145.5 510.0 C 109.1 512.0, 72.7 510.0, 36.4 504.0 C 24.2 502.0, 12.1 500.0, 0.0 498.0 Z",
+            others_path: "M 0.0 498.0 C 12.1 500.0, 24.2 502.0, 36.4 504.0 C 72.7 510.0, 109.1 512.0, 145.5 510.0 C 181.8 508.0, 218.2 502.0, 254.5 498.0 C 290.9 494.0, 327.3 492.0, 363.6 488.0 C 400.0 484.0, 436.4 478.0, 472.7 474.0 C 509.1 470.0, 545.5 468.0, 581.8 466.0 C 618.2 464.0, 654.5 462.0, 690.9 458.0 C 727.3 454.0, 763.6 448.0, 800.0 440.0 L 800.0 600.0 C 763.6 600.0, 727.3 600.0, 690.9 600.0 C 654.5 600.0, 618.2 600.0, 581.8 600.0 C 545.5 600.0, 509.1 600.0, 472.7 600.0 C 436.4 600.0, 400.0 600.0, 363.6 600.0 C 327.3 600.0, 290.9 600.0, 254.5 600.0 C 218.2 600.0, 181.8 600.0, 145.5 600.0 C 109.1 600.0, 72.7 600.0, 36.4 600.0 C 24.2 600.0, 12.1 600.0, 0.0 600.0 Z",
+            finance_percent: 41.3,
+            real_estate_percent: 19.0,
+            consumer_percent: 16.2,
+            others_percent: 23.5,
+            timeline: [
+                { label: "Dữ liệu tuần 1", finance: 41.3, real_estate: 19.0, consumer: 16.2, others: 23.5 },
+                { label: "Dữ liệu tuần 2", finance: 41.9, real_estate: 18.8, consumer: 15.9, others: 23.4 },
+                { label: "Dữ liệu tuần 3", finance: 42.4, real_estate: 18.6, consumer: 15.8, others: 23.2 },
+            ],
+        },
+        {
+            label: "1N",
+            finance_path: "M 0.0 0.0 C 36.4 0.0, 72.7 0.0, 109.1 2.0 C 145.5 4.0, 181.8 6.0, 218.2 4.0 C 254.5 2.0, 290.9 0.0, 327.3 2.0 C 363.6 4.0, 400.0 8.0, 436.4 12.0 C 472.7 16.0, 509.1 20.0, 545.5 18.0 C 581.8 16.0, 618.2 8.0, 654.5 6.0 C 690.9 4.0, 727.3 6.0, 763.6 8.0 C 781.8 9.0, 790.9 10.0, 800.0 12.0 L 800.0 205.0 C 770.0 210.0, 740.0 214.0, 710.0 216.0 C 680.0 218.0, 650.0 218.0, 620.0 220.0 C 590.0 222.0, 560.0 224.0, 530.0 228.0 C 500.0 232.0, 470.0 238.0, 440.0 242.0 C 410.0 246.0, 380.0 248.0, 350.0 252.0 C 320.0 256.0, 290.0 262.0, 260.0 266.0 C 230.0 270.0, 200.0 272.0, 170.0 274.0 C 120.0 278.0, 80.0 280.0, 40.0 276.0 C 26.7 275.0, 13.3 272.0, 0.0 270.0 Z",
+            real_estate_path: "M 0.0 270.0 C 13.3 272.0, 26.7 275.0, 40.0 276.0 C 80.0 280.0, 120.0 278.0, 170.0 274.0 C 200.0 272.0, 230.0 270.0, 260.0 266.0 C 290.0 262.0, 320.0 256.0, 350.0 252.0 C 380.0 248.0, 410.0 246.0, 440.0 242.0 C 470.0 238.0, 500.0 232.0, 530.0 228.0 C 560.0 224.0, 590.0 222.0, 620.0 220.0 C 650.0 218.0, 680.0 218.0, 710.0 216.0 C 740.0 214.0, 770.0 210.0, 800.0 205.0 L 800.0 330.0 C 770.0 336.0, 740.0 340.0, 710.0 342.0 C 680.0 344.0, 650.0 344.0, 620.0 346.0 C 590.0 348.0, 560.0 350.0, 530.0 354.0 C 500.0 358.0, 470.0 364.0, 440.0 368.0 C 410.0 372.0, 380.0 374.0, 350.0 378.0 C 320.0 382.0, 290.0 388.0, 260.0 392.0 C 230.0 396.0, 200.0 398.0, 170.0 400.0 C 120.0 404.0, 80.0 406.0, 40.0 402.0 C 26.7 401.0, 13.3 398.0, 0.0 396.0 Z",
+            consumer_path: "M 0.0 396.0 C 13.3 398.0, 26.7 401.0, 40.0 402.0 C 80.0 406.0, 120.0 404.0, 170.0 400.0 C 200.0 398.0, 230.0 396.0, 260.0 392.0 C 290.0 388.0, 320.0 382.0, 350.0 378.0 C 380.0 374.0, 410.0 372.0, 440.0 368.0 C 470.0 364.0, 500.0 358.0, 530.0 354.0 C 560.0 350.0, 590.0 348.0, 620.0 346.0 C 650.0 344.0, 680.0 344.0, 710.0 342.0 C 740.0 340.0, 770.0 336.0, 800.0 330.0 L 800.0 438.0 C 770.0 444.0, 740.0 448.0, 710.0 450.0 C 680.0 452.0, 650.0 452.0, 620.0 454.0 C 590.0 456.0, 560.0 458.0, 530.0 462.0 C 500.0 466.0, 470.0 472.0, 440.0 476.0 C 410.0 480.0, 380.0 482.0, 350.0 486.0 C 320.0 490.0, 290.0 496.0, 260.0 500.0 C 230.0 504.0, 200.0 506.0, 170.0 508.0 C 120.0 512.0, 80.0 514.0, 40.0 510.0 C 26.7 509.0, 13.3 506.0, 0.0 504.0 Z",
+            others_path: "M 0.0 504.0 C 13.3 506.0, 26.7 509.0, 40.0 510.0 C 80.0 514.0, 120.0 512.0, 170.0 508.0 C 200.0 506.0, 230.0 504.0, 260.0 500.0 C 290.0 496.0, 320.0 490.0, 350.0 486.0 C 380.0 482.0, 410.0 480.0, 440.0 476.0 C 470.0 472.0, 500.0 466.0, 530.0 462.0 C 560.0 458.0, 590.0 456.0, 620.0 454.0 C 650.0 452.0, 680.0 452.0, 710.0 450.0 C 740.0 448.0, 770.0 444.0, 800.0 438.0 L 800.0 600.0 C 763.6 600.0, 727.3 600.0, 690.9 600.0 C 654.5 600.0, 618.2 600.0, 581.8 600.0 C 545.5 600.0, 509.1 600.0, 472.7 600.0 C 436.4 600.0, 400.0 600.0, 363.6 600.0 C 327.3 600.0, 290.9 600.0, 254.5 600.0 C 218.2 600.0, 181.8 600.0, 145.5 600.0 C 109.1 600.0, 72.7 600.0, 36.4 600.0 C 24.2 600.0, 12.1 600.0, 0.0 600.0 Z",
+            finance_percent: 40.4,
+            real_estate_percent: 20.1,
+            consumer_percent: 15.0,
+            others_percent: 24.5,
+            timeline: [
+                { label: "Dữ liệu tuần 1", finance: 40.4, real_estate: 20.1, consumer: 15.0, others: 24.5 },
+                { label: "Dữ liệu tuần 2", finance: 40.7, real_estate: 20.3, consumer: 15.2, others: 24.8 },
+                { label: "Dữ liệu tuần 3", finance: 41.0, real_estate: 20.6, consumer: 15.4, others: 25.0 },
+            ],
+        },
+        {
+            label: "Tất cả",
+            finance_path: "M 0.0 0.0 C 36.4 0.0, 72.7 2.5, 109.1 3.5 C 145.5 4.5, 181.8 4.5, 218.2 5.5 C 254.5 6.5, 290.9 8.5, 327.3 9.5 C 363.6 10.5, 400.0 9.5, 436.4 8.5 C 472.7 7.5, 509.1 6.5, 545.5 6.5 C 581.8 6.5, 618.2 7.5, 654.5 8.5 C 690.9 9.5, 727.3 11.5, 763.6 12.5 C 781.8 13.1, 790.9 14.0, 800.0 15.0 L 800.0 210.0 C 763.6 214.0, 727.3 217.0, 690.9 219.0 C 654.5 221.0, 618.2 222.0, 581.8 224.0 C 545.5 226.0, 509.1 229.0, 472.7 232.0 C 436.4 235.0, 400.0 239.0, 363.6 242.0 C 327.3 245.0, 290.9 246.0, 254.5 249.0 C 218.2 252.0, 181.8 257.0, 145.5 259.0 C 109.1 261.0, 72.7 260.0, 36.4 256.0 C 24.2 254.8, 12.1 253.0, 0.0 251.0 Z",
+            real_estate_path: "M 0.0 251.0 C 12.1 253.0, 24.2 254.8, 36.4 256.0 C 72.7 260.0, 109.1 261.0, 145.5 259.0 C 181.8 257.0, 218.2 252.0, 254.5 249.0 C 290.9 246.0, 327.3 245.0, 363.6 242.0 C 400.0 239.0, 436.4 235.0, 472.7 232.0 C 509.1 229.0, 545.5 226.0, 581.8 224.0 C 618.2 222.0, 654.5 221.0, 690.9 219.0 C 727.3 217.0, 763.6 214.0, 800.0 210.0 L 800.0 330.0 C 763.6 334.0, 727.3 337.0, 690.9 339.0 C 654.5 341.0, 618.2 342.0, 581.8 344.0 C 545.5 346.0, 509.1 349.0, 472.7 352.0 C 436.4 355.0, 400.0 359.0, 363.6 362.0 C 327.3 365.0, 290.9 366.0, 254.5 369.0 C 218.2 372.0, 181.8 377.0, 145.5 379.0 C 109.1 381.0, 72.7 380.0, 36.4 376.0 C 24.2 374.8, 12.1 373.0, 0.0 371.0 Z",
+            consumer_path: "M 0.0 371.0 C 12.1 373.0, 24.2 374.8, 36.4 376.0 C 72.7 380.0, 109.1 381.0, 145.5 379.0 C 181.8 377.0, 218.2 372.0, 254.5 369.0 C 290.9 366.0, 327.3 365.0, 363.6 362.0 C 400.0 359.0, 436.4 355.0, 472.7 352.0 C 509.1 349.0, 545.5 346.0, 581.8 344.0 C 618.2 342.0, 654.5 341.0, 690.9 339.0 C 727.3 337.0, 763.6 334.0, 800.0 330.0 L 800.0 438.0 C 763.6 442.0, 727.3 444.0, 690.9 446.0 C 654.5 448.0, 618.2 449.0, 581.8 451.0 C 545.5 453.0, 509.1 456.0, 472.7 459.0 C 436.4 462.0, 400.0 466.0, 363.6 469.0 C 327.3 472.0, 290.9 473.0, 254.5 476.0 C 218.2 479.0, 181.8 484.0, 145.5 486.0 C 109.1 488.0, 72.7 487.0, 36.4 483.0 C 24.2 481.8, 12.1 480.0, 0.0 478.0 Z",
+            others_path: "M 0.0 478.0 C 12.1 480.0, 24.2 481.8, 36.4 483.0 C 72.7 487.0, 109.1 488.0, 145.5 486.0 C 181.8 484.0, 218.2 479.0, 254.5 476.0 C 290.9 473.0, 327.3 472.0, 363.6 469.0 C 400.0 466.0, 436.4 462.0, 472.7 459.0 C 509.1 456.0, 545.5 453.0, 581.8 451.0 C 618.2 449.0, 654.5 448.0, 690.9 446.0 C 727.3 444.0, 763.6 442.0, 800.0 438.0 L 800.0 600.0 C 763.6 600.0, 727.3 600.0, 690.9 600.0 C 654.5 600.0, 618.2 600.0, 581.8 600.0 C 545.5 600.0, 509.1 600.0, 472.7 600.0 C 436.4 600.0, 400.0 600.0, 363.6 600.0 C 327.3 600.0, 290.9 600.0, 254.5 600.0 C 218.2 600.0, 181.8 600.0, 145.5 600.0 C 109.1 600.0, 72.7 600.0, 36.4 600.0 C 24.2 600.0, 12.1 600.0, 0.0 600.0 Z",
+            finance_percent: 39.8,
+            real_estate_percent: 21.0,
+            consumer_percent: 14.8,
+            others_percent: 24.4,
+            timeline: [
+                { label: "Dữ liệu tuần 1", finance: 39.8, real_estate: 21.0, consumer: 14.8, others: 24.4 },
+                { label: "Dữ liệu tuần 2", finance: 40.2, real_estate: 21.1, consumer: 15.0, others: 23.7 },
+                { label: "Dữ liệu tuần 3", finance: 40.5, real_estate: 21.2, consumer: 15.2, others: 23.1 },
+            ],
+        }
+    ];
+    
+    VerticalLayout {
+        spacing: 12px;
+        padding: 12px;
+        
+        // Header
+        Rectangle {
+            height: 50px;
+            background: transparent;
+            VerticalLayout {
+                alignment: center;
+                Text {
+                    text: "Tổng Quan Vốn Hóa Thị Trường";
+                    color: #ffffff;
+                    font-size: 18px;
+                    font-weight: 700;
+                }
+                Text {
+                    text: "Dữ liệu toàn cảnh về vốn hóa thị trường chứng khoán Việt Nam.";
+                    color: #999;
+                    font-size: 12px;
+                }
+            }
+        }
+        
+        // Main Content Area
+        HorizontalLayout {
+            spacing: 12px;
+
+            // 1. Cột Trái (Summary) - Fixed width, nhỏ gọn hơn
+            VerticalLayout {
+                width: 280px; 
+                spacing: 10px;
+                alignment: start;
+                
+                MarketCapSummaryCard {
+                    label: "Tổng Vốn Hóa (tỷ VND)";
+                    value: Utils.parse_volume(Math.round(root.overview.total_market_cap));
+                }
+                MarketCapSummaryCard {
+                    label: "Thay Đổi (24h)";
+                    value: (root.overview.change_24h >= 0 ? "+" : "") + Utils.parse_volume(Math.round(root.overview.change_24h));
+                    sub_value: (root.overview.change_24h_percent >= 0 ? "+" : "") + root.overview.change_24h_percent.to-fixed(2) + "%";
+                    value_color: root.overview.change_24h >= 0 ? #58af26 : #ff4d4f;
+                    sub_value_color: root.overview.change_24h_percent >= 0 ? #58af26 : #ff4d4f;
+                }
+                MarketCapSummaryCard {
+                    label: "KL Giao Dịch (cổ phiếu)";
+                    value: Utils.parse_volume(root.overview.trading_volume);
+                }
+                MarketCapSummaryCard {
+                    label: "GT Giao Dịch (tỷ VND)";
+                    value: Utils.parse_volume(Math.round(root.overview.trading_value));
+                }
+            }
+
+            // 2. Cột Giữa (Charts) - Flexible width
+            // Chiếm phần không gian còn lại sau khi trừ Cột Trái và Phải
+            VerticalLayout {
+                horizontal-stretch: 1; 
+                spacing: 12px;
+                
+                // Top 10 Chart
+                Top10MarketCapChart {
+                    vertical-stretch: 1; // Chiếm khoảng 55% chiều cao cột giữa
+                    stocks: root.top10_stocks;
+                }
+                
+                // Sector Chart
+                SectorDistributionChart {
+                    height: 320px; // Tăng chiều cao giúp đường rõ hơn
+                    ranges: root.sector_ranges;
+                }
+            }
+
+            // 3. Cột Phải (Table) - Fixed width, mở rộng ra
+            Rectangle {
+                width: 440px; // Đã tăng từ 380 lên 440 để hiển thị rõ cột bên phải
+                TopMarketCapTable {
+                    stocks: root.top20_stocks;
+                }
+            }
+        }
+    }
+}

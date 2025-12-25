@@ -1,0 +1,66 @@
+export struct FinanceName {
+    name: string,
+    level: int,
+    parent-id: int,
+}
+
+export struct FinanceValue {
+    quarter: string,
+    items: [float],
+}
+
+export struct FinanceList {
+    name: [FinanceName],
+    value: [FinanceValue],
+    expanded: [bool],
+}
+
+export struct HeaderData {
+    symbol: string,
+    stock-name: string,
+    stock-type: string,
+    price-change: float,
+    price-change-percent: string,
+    current-price: float,
+    reference-price: float,
+    floor-price: float,
+    ceiling-price: float,
+    high-price: float,
+    low-price: float,
+    volume: float,
+    listed-shares: float,
+    market-cap: float,
+    dividend: float,
+}
+
+
+export struct SharedHolder {
+    name: string,
+    shares: int,
+    percent: float,
+    updated_at: string,
+}
+
+export struct Officer {
+    name: string,
+    position: string,
+    shares: int,
+    updated_at: string,
+}
+
+export struct Subsidiary {
+    name: string,
+    charter_capital: float,
+    ownership_percent: float,
+}
+
+export struct InsiderTransaction {
+    name: string,
+    transaction_type: string,
+    registered_quantity: int,
+    executed_quantity: int,
+    registration_date: string,
+    execution_date: string,
+    price_before_gd: float,
+    price_after_gd: float,
+}

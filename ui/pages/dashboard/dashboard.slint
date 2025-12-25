@@ -1,0 +1,347 @@
+import { HeatMap } from "heatmap.slint";
+import { StockInfluence } from "Influence_table.slint";
+import { ICBIndex } from "ICB_index.slint";
+import { OverallIndex } from "overall_index.slint";
+import { TextButton } from "../../widgets/aim_widget.slint";
+import { GoodsPrice } from "goods_price.slint";
+import { AbnormalTrade } from "abnormal_trade.slint";
+import { VolumeData, AbnormalTradeData, ICBRow, HeatMapData,InfluenceData, IndexRow, GoodsData, StockReport, StrategyReport, CorrelationRow, ReturnRowData, RsiData, CoinData, MaData, ForexData } from "../../data_type.slint";
+import { SectorRangeSnapshot } from "../quantitative/quantitative_price_trade_heatmap.slint";
+import { TradingVolume } from "trading_volume.slint";
+import { SentimentAnalysis } from "../chart/sentiment.slint";
+import { FinanceReport } from "../chart/finance_report.slint";
+import { QuantitativeAnalysis } from "../chart/quantitative.slint";
+
+component DashBoardContent inherits Rectangle {
+    in property <[InfluenceData]> influence_data;
+    in property <[IndexRow]> index_data;
+    in property <HeatMapData> heatmap_data;
+    in property <[ICBRow]> icb_index_data;
+    in property <[AbnormalTradeData]> abnormal_trade_data;
+    in property <[VolumeData]> td_data;
+    in property <[VolumeData]> nn_data;
+    in property <[GoodsData]> good_data;
+    background: #1a1a1a;
+    Flickable {
+        HorizontalLayout {
+            padding: 16px;
+            VerticalLayout {
+                TradingVolume {
+                    title: "GIAO DỊCH TỰ DOANH";
+                    min-height: 150px;
+                    data <=> td_data;
+                }
+                TradingVolume {
+                    min-height: 150px;
+                    title: "GIAO DỊCH NƯỚC NGOÀI";
+                    data <=> nn_data;
+                }
+                OverallIndex {
+                    max-width: 600px;
+                    data <=> index_data;
+                }
+                ICBIndex {
+                    data <=> icb_index_data;
+                }
+            }
+            VerticalLayout {
+                StockInfluence {
+                    data <=> influence_data;
+                }
+                Rectangle {
+                    height: 40px;
+                    background: transparent;
+                    Text {
+                        text: "SƠ ĐỒ NHIỆT THỊ TRƯỜNG CHỨNG KHOÁN";
+                        font-size: 18px;
+                        font-weight: 700;
+                        color: white;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: #444;
+                }
+                // Main heatmap
+                // HeatMap {
+                //     data <=> heatmap_data;
+                // }
+            }
+            VerticalLayout {
+                AbnormalTrade {
+                    max-width: 500px;
+                    data <=> abnormal_trade_data;
+                }
+                GoodsPrice {
+                    data <=> good_data;
+                }
+            }
+        }
+    }
+}
+
+export component DashBoard inherits Rectangle {
+    in property <[InfluenceData]> influence_data;
+    in property <[IndexRow]> index_data;
+    in property <HeatMapData> heatmap_data;
+    in property <[ICBRow]> icb_index_data;
+    in property <[AbnormalTradeData]> abnormal_trade_data;
+    in property <[VolumeData]> td_data;
+    in property <[VolumeData]> nn_data;
+    in property <[GoodsData]> good_data;
+    
+    // Sentiment Analysis properties
+    
+    // Finance Report properties
+    in property <[StockReport]> report_list;
+    in property <[StrategyReport]> strategy_list;
+    in property <[image]> pdf_pages;
+    in property <bool> is_loading: false;
+    callback report_selected(string);
+    
+    // Quantitative Analysis properties
+    in-out property <[string]> selected_tags: [];
+    in property <[CorrelationRow]> correlation_rows: [];
+    in property <[string]> correlation_columns: [];
+    in property <[ReturnRowData]> return_row_data: [];
+    in property <[RsiData]> rsi_list;
+    in property <[CoinData]> coin_list;
+    in property <[MaData]> ma_list;
+    in-out property <[SectorRangeSnapshot]> sector_ranges;
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    callback calculateCorrelation(string);
+    callback getReturnMatrix(string, string, string);
+    callback sort_rsi14();
+    property <length> tab_item_width: 200px;
+
+    // Forex
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+    
+    background: #1a1a1a;
+    
+    VerticalLayout {
+        // Horizontal Tab Bar
+        Rectangle {
+            background: #19191C;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            height: 56px;
+            HorizontalLayout {
+                Rectangle { width: 24px; }
+                
+                tab_dashboard := TextButton {
+                    width: tab_item_width;
+                    text: "Dashboard";
+                    selected: true;
+                    clicked => {
+                        tab_sentiment.selected = false;
+                        tab_finance_report.selected = false;
+                        tab_quantitative.selected = false;
+                    }
+                }
+                Rectangle { width: 8px; }
+                
+                tab_sentiment := TextButton {
+                    width: tab_item_width;
+                    text: "Sentiment Analysis";
+                    clicked => {
+                        tab_dashboard.selected = false;
+                        tab_finance_report.selected = false;
+                        tab_quantitative.selected = false;
+                    }
+                }
+                Rectangle { width: 8px; }
+                
+                tab_finance_report := TextButton {
+                    width: tab_item_width;
+                    text: "Báo Cáo Tài Chính";
+                    clicked => {
+                        tab_dashboard.selected = false;
+                        tab_sentiment.selected = false;
+                        tab_quantitative.selected = false;
+                    }
+                }
+                Rectangle { width: 8px; }
+                
+                tab_quantitative := TextButton {
+                    width: tab_item_width;
+                    text: "Phân Tích Định Lượng";
+                    clicked => {
+                        tab_dashboard.selected = false;
+                        tab_sentiment.selected = false;
+                        tab_finance_report.selected = false;
+                    }
+                }
+                
+                Rectangle {} // Spacer
+                Rectangle { width: 20px; }
+            }
+        }
+        
+        Rectangle { height: 5px; }
+        
+        // Content Area
+        Rectangle {
+            background: #19191C;
+            border-radius: 10px;
+            
+            if tab_dashboard.selected: DashBoardContent {
+                influence_data: root.influence_data;
+                index_data: root.index_data;
+                heatmap_data: root.heatmap_data;
+                icb_index_data: root.icb_index_data;
+                abnormal_trade_data: root.abnormal_trade_data;
+                td_data: root.td_data;
+                nn_data: root.nn_data;
+                good_data: root.good_data;
+            }
+            
+            if tab_sentiment.selected: SentimentAnalysis {
+                width: 100%;
+                height: 100%;
+            }
+            
+            if tab_finance_report.selected: FinanceReport {
+                report_list: root.report_list;
+                strategy_list: root.strategy_list;
+                pdf_pages: root.pdf_pages;
+                is_loading: root.is_loading;
+                report_selected(report_id) => {
+                    root.report_selected(report_id);
+                }
+            }
+            
+            if tab_quantitative.selected: QuantitativeAnalysis {
+                selected_tags <=> root.selected_tags;
+                correlation_rows: root.correlation_rows;
+                correlation_columns: root.correlation_columns;
+                return_row_data: root.return_row_data;
+                rsi_list: root.rsi_list;
+                coin_list: root.coin_list;
+                ma_list: root.ma_list;
+                sector_ranges <=> root.sector_ranges;
+                on_add_tag(tag) => {
+                    root.on_add_tag(tag);
+                }   
+                on_remove_tag(index) => {
+                    root.on_remove_tag(index);
+                }
+                calculateCorrelation(type) => {
+                    root.calculateCorrelation(type);
+                }
+                getReturnMatrix(period, group, month) => {
+                    root.getReturnMatrix(period, group, month);
+                }
+                sort_rsi14 => {
+                    root.sort_rsi14();
+                }
+                // Forex
+                forex_list: root.forex_list;
+                on_group_selected(selected_groups) => {
+                    root.on_group_selected(selected_groups);
+                }
+
+                width: 100%;
+                height: 100%;
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    in-out property <[InfluenceData]> stock_influence_data;
+    in-out property <[IndexRow]> overall_index_data;
+    in-out property <HeatMapData> heatmap_data;
+    in-out property <[ICBRow]> icb_index_data;
+    in-out property <[VolumeData]> td_data;
+    in-out property <[VolumeData]> nn_data;
+    in-out property <[AbnormalTradeData]> abnormal_trade_data;
+    in-out property <[GoodsData]> good_data;
+    
+    // Sentiment Analysis properties
+    
+    // Finance Report properties
+    in-out property <[StockReport]> report_list;
+    in-out property <[StrategyReport]> strategy_list;
+    in-out property <[image]> pdf_pages;
+    in-out property <bool> is_loading: false;
+    callback report_selected(string);
+    
+    // Quantitative Analysis properties
+    in-out property <[string]> selected_tags: [];
+    in-out property <[CorrelationRow]> correlation_rows: [];
+    in-out property <[string]> correlation_columns: [];
+    in-out property <[ReturnRowData]> return_row_data: [];
+    in-out property <[RsiData]> rsi_list;
+    in-out property <[CoinData]> coin_list;
+    in-out property <[MaData]> ma_list;
+    in-out property <[SectorRangeSnapshot]> sector_ranges;
+    callback on_add_tag(string);
+    callback on_remove_tag(int);
+    callback calculateCorrelation(string);
+    callback getReturnMatrix(string, string, string);
+    callback sort_rsi14();
+
+    in-out property <[ForexData]> forex_list: [];
+    in-out property <string> selected_groups: "USD";
+    
+
+    // Callbacks to backend
+    callback on_group_selected(string);
+    
+    DashBoard {
+        influence_data <=> root.stock_influence_data;
+        index_data <=> root.overall_index_data;
+        heatmap_data <=> root.heatmap_data;
+        icb_index_data <=> root.icb_index_data;
+        abnormal_trade_data <=> root.abnormal_trade_data;
+        td_data <=> root.td_data;
+        nn_data <=> root.nn_data;
+        good_data <=> root.good_data;
+        
+        report_list <=> root.report_list;
+        strategy_list <=> root.strategy_list;
+        pdf_pages <=> root.pdf_pages;
+        is_loading <=> root.is_loading;
+        report_selected(report_id) => {
+            root.report_selected(report_id);
+        }
+        
+        selected_tags <=> root.selected_tags;
+        correlation_rows <=> root.correlation_rows;
+        correlation_columns <=> root.correlation_columns;
+        return_row_data <=> root.return_row_data;
+        rsi_list <=> root.rsi_list;
+        coin_list <=> root.coin_list;
+        ma_list <=> root.ma_list;
+        sector_ranges <=> root.sector_ranges;
+        on_add_tag(tag) => {
+            root.on_add_tag(tag);
+        }
+        on_remove_tag(index) => {
+            root.on_remove_tag(index);
+        }
+        calculateCorrelation(type) => {
+            root.calculateCorrelation(type);
+        }
+        getReturnMatrix(period, group, month) => {
+            root.getReturnMatrix(period, group, month);
+        }
+        sort_rsi14 => {
+            root.sort_rsi14();
+        }
+        // Forex
+        forex_list: root.forex_list;
+        on_group_selected(selected_groups) => {
+            root.on_group_selected(selected_groups);
+        }
+        
+    }
+}

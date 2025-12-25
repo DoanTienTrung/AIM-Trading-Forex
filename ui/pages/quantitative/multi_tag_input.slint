@@ -1,0 +1,82 @@
+import { LineEdit } from "std-widgets.slint";
+export component MultiTagsInput {
+    in-out property <[string]> multi_tags: ["AAA", "ACB", "XYZ"];
+    private property <string> new_text: "";
+    callback on_add_tag(text: string);
+    callback on_remove_tag(index: int);
+    height: 40px;
+
+    Rectangle {
+        border-width: 1px;
+        border-color: #2a2f3a;
+        border-radius: 6px;
+        background: #1e2533;
+
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            padding: 7px;
+            // Ô NHẬP TÊN TAG
+            Rectangle {
+                horizontal-stretch: 1;
+                input := LineEdit {
+                    width: parent.width;
+                    height: 26px;
+                    font-size: 14px;
+                    text <=> new_text;
+                    placeholder-text: "Thêm mã cổ phiếu";
+                    accepted => {
+                        if (new_text != "") {
+                            root.on_add_tag(new_text);
+                            new_text = "";
+                        }
+                    }
+                }
+            }
+
+            // DANH SÁCH TAG
+            for t[i] in multi_tags: Rectangle {
+                border-radius: 6px;
+                background: #113a5e;
+                height: 26px;
+
+                HorizontalLayout {  
+                    width: 100%;
+                    height: 100%;
+                    alignment: center;
+                    padding-left: 4px;
+                    padding-right: 4px;
+                    padding-top: 4px;
+                    spacing: 6px;
+
+                    Text {
+                        text: t;
+                        color: white;
+                        font-size: 14px;
+                    }
+
+                    // NÚT X
+                    Rectangle {
+                        width: 16px;
+                        height: 16px;
+                        border-radius: 8px;
+                        background: #337be0;
+
+                        Text {
+                            text: "x";
+                            color: #c0cad6;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        TouchArea {
+                            clicked => {
+                                root.on_remove_tag(i);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

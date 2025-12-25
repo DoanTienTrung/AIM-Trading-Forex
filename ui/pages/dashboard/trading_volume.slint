@@ -1,0 +1,274 @@
+import { VolumeData } from "../../data_type.slint";
+
+export component TradingVolume inherits Rectangle {
+    in property <[VolumeData]> data: [
+        { sell_volume: -10, buy_volume: 10, time: "2023-01-01T00:00:00Z" },
+        { sell_volume: -10, buy_volume: 30, time: "2023-01-01T01:00:00Z" },
+        { sell_volume: -80, buy_volume: 40, time: "2023-01-01T02:00:00Z" },
+        { sell_volume: -20, buy_volume: 25, time: "2023-01-01T03:00:00Z" },
+        { sell_volume: -10, buy_volume: 15, time: "2023-01-01T04:00:00Z" },
+        { sell_volume: -18, buy_volume: 12, time: "2023-01-01T05:00:00Z" },
+        { sell_volume: -22, buy_volume: 20, time: "2023-01-01T06:00:00Z" },
+        { sell_volume: -14, buy_volume: 18, time: "2023-01-01T07:00:00Z" },
+        { sell_volume: -16, buy_volume: 14, time: "2023-01-01T08:00:00Z" },
+        { sell_volume: -12, buy_volume: 16, time: "2023-01-01T09:00:00Z" },
+        { sell_volume: -18, buy_volume: 22, time: "2023-01-01T10:00:00Z" },
+        { sell_volume: -8, buy_volume: 12, time: "2023-01-01T11:00:00Z" },
+        { sell_volume: -15, buy_volume: 18, time: "2023-01-01T12:00:00Z" },
+        { sell_volume: -25, buy_volume: 15, time: "2023-01-01T13:00:00Z" },
+        { sell_volume: -12, buy_volume: 20, time: "2023-01-01T14:00:00Z" },
+    ];
+    in property <string> title: "GIAO DỊCH TỰ DOANH";
+    
+    background: #1a1a1a;
+
+    property <float> max-total-volume: 2.2 * Math.max(
+        data[0].buy_volume, Math.abs(data[0].sell_volume),
+        data[1].buy_volume, Math.abs(data[1].sell_volume),
+        data[2].buy_volume, Math.abs(data[2].sell_volume),
+        data[3].buy_volume, Math.abs(data[3].sell_volume),
+        data[4].buy_volume, Math.abs(data[4].sell_volume),
+        data[5].buy_volume, Math.abs(data[5].sell_volume),
+        data[6].buy_volume, Math.abs(data[6].sell_volume),
+        data[7].buy_volume, Math.abs(data[7].sell_volume),
+        data[8].buy_volume, Math.abs(data[8].sell_volume),
+        data[9].buy_volume, Math.abs(data[9].sell_volume),
+        data[10].buy_volume, Math.abs(data[10].sell_volume),
+        data[11].buy_volume, Math.abs(data[11].sell_volume),
+        data[12].buy_volume, Math.abs(data[12].sell_volume),
+        data[13].buy_volume, Math.abs(data[13].sell_volume),
+        data[14].buy_volume, Math.abs(data[14].sell_volume)
+    );
+
+    // Tooltip properties
+    property <bool> tooltip-visible: false;
+    property <string> tooltip-text: "";
+    property <length> tooltip-x: 0px;
+    property <length> tooltip-y: 0px;
+    property <int> current-hovered-index: -1;
+    
+    VerticalLayout {
+		spacing: 5px;
+        Rectangle {
+            height: 40px;
+            background: #2a2a2a;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+
+            Text {
+                text: title;
+                font-size: 14px;
+                font-weight: 700;
+                color: white;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+        Rectangle {
+            Rectangle {
+                x: 20px;
+                y: 20px;
+                width: parent.width - 10px;
+                
+                // Grid lines
+                for i in 5: Rectangle {
+                    y: i * (parent.height - 60px) / 4;
+                    width: 100%;
+                    height: 1px;
+                    background: #333;
+                }
+                
+                // Y-axis labels
+                for i in 5: Text {
+                    x: -15px;
+                    y: i * (parent.height - 60px) / 4 - 8px;
+                    text: Math.round((2 - i) * max-total-volume / 4);
+                    color: #666;
+                    font-size: 10px;
+                    horizontal-alignment: right;
+                }
+                
+                // Data bars
+                for item[index] in data: Rectangle {
+                    x: (index + 1) * (parent.width - 40px) / data.length;
+                    width: (parent.width - 40px) / data.length;
+                    height: parent.height - 60px;
+                    
+                    property <length> bar-spacing: 8px;
+                    property <length> actual-bar-width: (parent.width - 40px) / data.length - bar-spacing;
+                    property <bool> is-hovered: touch-area.has-hover;
+                    
+                    // Mouse area for hover detection
+                    touch-area := TouchArea {
+                        width: parent.width;
+                        height: parent.height;
+                        
+                        pointer-event(event) => {
+                            if (event.kind == PointerEventKind.move) {
+                                current-hovered-index = index;
+                                tooltip-visible = true;
+                                // Position tooltip to the left for bars 8-14, to the right for bars 0-7
+                                if (index >= 8) {
+                                    tooltip-x = self.mouse-x + parent.x - 180px; // Show to the left
+                                } else {
+                                    tooltip-x = self.mouse-x + parent.x + 20px;  // Show to the right
+                                }
+                                tooltip-y = self.mouse-y + parent.y - 50px;
+                                tooltip-text = "Time: " + item.time + "\nBuy Volume: " + item.buy_volume.to-fixed(2) + " Tỷ" + "\nSell Volume: " + item.sell_volume.to-fixed(2) + " Tỷ" + "\nNet Volume: " + (item.buy_volume + item.sell_volume).to-fixed(2) + " Tỷ";
+                            }
+                        }
+                        
+                        moved => {
+                            current-hovered-index = index;
+                            tooltip-visible = true;
+                            // Position tooltip to the left for bars 8-14, to the right for bars 0-7
+                            if (index >= 8) {
+                                tooltip-x = self.mouse-x + parent.x - 180px; // Show to the left
+                            } else {
+                                tooltip-x = self.mouse-x + parent.x + 20px;  // Show to the right
+                            }
+                            tooltip-y = self.mouse-y + parent.y - 50px;
+                            tooltip-text = "Time: " + item.time + "\nBuy Volume: " + item.buy_volume.to-fixed(2) + " Tỷ" + "\nSell Volume: " + item.sell_volume.to-fixed(2) + " Tỷ" + "\nNet Volume: " + (item.buy_volume + item.sell_volume).to-fixed(2) + " Tỷ";
+                        }
+                    }
+                    
+                    // Sell volume (red, below zero line)
+                    Rectangle {
+                        x: is-hovered ? bar-spacing / 2 - 2px : bar-spacing / 2;
+                        width: is-hovered ? actual-bar-width + 4px : actual-bar-width;
+                        y: (parent.height - 60px) / 2;
+                        height: Math.abs(item.sell_volume) / max-total-volume * parent.height;
+                        background: is-hovered ? #ff4757 : #dc3545;
+                        border-width: is-hovered ? 2px : 1px;
+                        border-color: #a71e2a;
+                        border-bottom-left-radius: 8px;
+                        border-bottom-right-radius: 8px;
+                        
+                        animate background, border-width, x, width { duration: 150ms; easing: ease-out; }
+                    }
+                    
+                    // Buy volume (green, above zero line)
+                    Rectangle {
+                        x: is-hovered ? bar-spacing / 2 - 2px : bar-spacing / 2;
+                        width: is-hovered ? actual-bar-width + 4px : actual-bar-width;
+                        y: (parent.height - 60px) / 2 - item.buy_volume / max-total-volume * parent.height;
+                        height: item.buy_volume / max-total-volume * parent.height;
+                        background: is-hovered ? #2ed573 : #28a745;
+                        border-width: is-hovered ? 2px : 1px;
+                        border-color: #1e7e34;
+                        border-top-left-radius: 8px;
+                        border-top-right-radius: 8px;
+        
+                        animate background, border-width, x, width { duration: 150ms; easing: ease-out; }
+                    }
+                }
+                
+                // Yellow circles at each data point (center of bars)
+                for item[index] in data: Rectangle {
+                    // Exact same positioning as the bar containers, then center within the actual bars
+                    property <length> bar-container-x: (index + 1) * (parent.width - 40px) / data.length + 20px;
+                    property <length> bar-spacing: 6px;
+                    
+                    // The center should be: container start + half the container width (which includes spacing)
+                    property <length> bar-center-x: bar-container-x + ((parent.width - 40px) / data.length) / 2;
+                    property <length> total-volume-y: (parent.height - 60px) / 2 - ((item.sell_volume + item.buy_volume) / max-total-volume * parent.height);
+                    
+                    x: bar-center-x - 24px;
+                    y: total-volume-y - 4px;
+                    width: 8px;
+                    height: 8px;
+                    background: #ffc107;
+                    border-radius: 4px;
+                    border-width: 2px;
+                    border-color: #e6ac00;
+                    
+                    // Add glow effect for better visibility
+                    drop-shadow-blur: 6px;
+                    drop-shadow-color: rgba(255, 193, 7, 0.6);
+                }
+                
+                // Yellow line for total volume - smooth curved line
+                for item[index] in data: Rectangle {
+                    if (index < data.length - 1): Rectangle {
+                        // Use the exact same center calculation as the circles
+                        property <length> bar-container-x: (index + 1) * (parent.width - 40px) / data.length + 20px;
+                        property <length> next-bar-container-x: (index + 2) * (parent.width - 40px) / data.length + 20px;
+                        
+                        property <length> current-x: bar-container-x + ((parent.width - 40px) / data.length) / 2;
+                        property <length> next-x: next-bar-container-x + ((parent.width - 40px) / data.length) / 2;
+                        property <length> current-y: (parent.height - 60px) / 2 - ((item.sell_volume + item.buy_volume) / max-total-volume * parent.height);
+                        property <length> next-y: (parent.height - 60px) / 2 - ((data[index + 1].sell_volume + data[index + 1].buy_volume) / max-total-volume * parent.height);
+                        
+                        property <length> dx: next-x - current-x;
+                        property <length> dy: next-y - current-y;
+                        property <float> distance: Math.sqrt((dx/1px) * (dx/1px) + (dy/1px) * (dy/1px));
+                        property <float> steps: Math.max(distance * 3, 20); // Much higher density for smooth curves
+                        
+                        // Create smooth curved line with bezier-like interpolation
+                        for step in Math.round(steps): Rectangle {
+                            property <float> t: (step + 0.0) / steps;
+                            property <float> smooth-t: t * t * (3.0 - 2.0 * t); // Smoothstep interpolation for curves
+                            
+                            x: current-x + smooth-t * dx - 22px;
+                            y: current-y + smooth-t * dy - 1px;
+                            width: 2px;
+                            height: 2px;
+                            background: #ffc107;
+                            border-radius: 1px;
+                        }
+                    }
+                }
+
+            }
+            
+            // Global mouse area to hide tooltip when cursor leaves chart
+            TouchArea {
+                width: parent.width;
+                height: parent.height;
+                z: -1; // Place behind other touch areas
+                
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.move) {
+                        // Check if we're outside the main chart area
+                        if (self.mouse-y < 30px || self.mouse-y > parent.height - 60px || 
+                            self.mouse-x < 20px || self.mouse-x > parent.width - 20px) {
+                            tooltip-visible = false;
+                        }
+                    }
+                }
+                
+                moved => {
+                    // Additional check for smooth hiding
+                    if (self.mouse-y < 30px || self.mouse-y > parent.height - 60px || 
+                        self.mouse-x < 20px || self.mouse-x > parent.width - 20px) {
+                        tooltip-visible = false;
+                    }
+                }
+            }
+            
+            // Tooltip display
+            if tooltip-visible: Rectangle {
+                x: tooltip-x;
+                y: tooltip-y;
+                width: 200px;
+                height: 80px;
+                background: rgba(0, 0, 0, 0.9);
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #555;
+                
+                drop-shadow-blur: 10px;
+                drop-shadow-color: rgba(0, 0, 0, 0.3);
+                
+                Text {
+                    text: tooltip-text;
+                    color: white;
+                    font-size: 12px;
+                    x: 10px;
+                    y: 10px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

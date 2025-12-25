@@ -1,0 +1,12 @@
+-3. Login page
+-2. auto move sau khi ve
+-1. background ghi ma co phieu
+0. fix font chu
+1. fix candlestick (in case: open = close)
+3. viet chu len chart (cho custom size)
+4. watch list cho tung dong co phieu
+5. resize rectangle vs line
+8. Add indicator
+9. cache data
+10. multi-chart
+11. grid (optional)

@@ -1,0 +1,436 @@
+import { Palette, LineEdit, StandardButton } from "std-widgets.slint";
+
+struct Palette  {
+    menuBar : brush,
+    mainContent : brush,
+    box : brush,
+    lightDisplay : brush,
+    pieChart : brush,
+    roundButton : brush,
+    weekdayBox : brush,
+    text : brush,
+    shadow : brush,
+}
+global Skin  {
+    in property <bool> day: Palette.color-scheme != ColorScheme.dark;
+    out property <Palette> palette : root.day ? {
+       menuBar : #6D7BFB,
+       mainContent :  #fbfbfb,
+       box :   #565656,
+       lightDisplay : #ffffff,
+       pieChart : #ffffff,
+       roundButton : #f7f7f7,
+       weekdayBox : #f4f4f4,
+       text : #ffffff,
+       shadow : #0001, // ### added alpha
+    } : {
+       menuBar : #2937A7,
+       mainContent : #040404,
+       box : #000000,
+       lightDisplay : #000000,
+       pieChart : #000000,
+       roundButton : #0a0a0a,
+       weekdayBox : #0c0c0c,
+       text : #fff,
+       shadow : #fff1, // ### added alpha
+    };
+
+    // From Skin::initHints in Skin.cpp
+    out property <length> DefaultFont: 12px;
+    out property <length> TinyFont: 9px;
+    out property <length> SmallFont: 10px;
+    out property <length> MediumFont: 13px;
+    out property <length> LargeFont: 20px;
+    out property <length> HugeFont: 40px; // (also, bold)
+    out property <length> TitleFont: 10px; // (also, bold)
+}
+// This element is not in the C++ version, created to share code between Box and the Usage element
+component BoxBase inherits Rectangle {
+    background: Skin.palette.box;
+    drop-shadow-offset-x: 6px;
+    drop-shadow-offset-y: 6px;
+    drop-shadow-blur: 6px;
+    drop-shadow-color: Skin.palette.shadow;
+}
+
+component Box inherits BoxBase {
+    in property <string> title;
+
+    VerticalLayout {
+        if (root.title != "") : Text {
+            text <=> root.title;
+            font-size: Skin.LargeFont;
+            font-weight: 700;
+            color: Skin.palette.text;
+        }
+        spacing: 10px;
+        padding: 15px;
+
+        @children
+    }
+}
+
+component PieChartFill inherits Path {
+    in property <float> thickness : 8;
+    in property <float> inner-radius : 50 - root.thickness;
+    in property <float> progress : 0.5;
+    in property <float> start : 0.5;
+    fill: @linear-gradient(0deg, #79b0f0 0%, #fd003f 50%, #79b0f0 100%);
+
+    viewbox-width: 100;
+    viewbox-height: 100;
+    stroke-line-cap: round;
+
+
+    MoveTo {
+        y: 50 - 50 * cos(-root.start * 360deg);
+        x: 50 - 50 * sin(-root.start * 360deg);
+    }
+
+    LineTo {
+        y: 50 - root.inner-radius * cos(-root.start * 360deg);
+        x: 50 - root.inner-radius * sin(-root.start * 360deg);
+    }
+
+    ArcTo {
+        radius-x: root.inner-radius;
+        radius-y: root.inner-radius;
+        y: 50 - root.inner-radius*cos(-(root.start + root.progress) * 360deg);
+        x: 50 - root.inner-radius*sin(-(root.start + root.progress) * 360deg);
+        sweep: root.progress > 0;
+        large-arc: root.progress > 0.5;
+    }
+
+    LineTo {
+        y: 50 - 50*cos(-(root.start + root.progress) * 360deg);
+        x: 50 - 50*sin(-(root.start + root.progress) * 360deg);
+    }
+
+    ArcTo {
+        radius-x: 50;
+        radius-y: 50;
+        y: 50 - 50 * cos(-root.start * 360deg);
+        x: 50 - 50 * sin(-root.start * 360deg);
+        sweep: root.progress < 0;
+        large-arc: root.progress > 0.5;
+    }
+
+    LineTo {
+        y: 50 - 50 * cos(-root.start * 360deg);
+        x: 50 - 50 * sin(-root.start * 360deg);
+    }
+}
+
+component SentimentDimmer inherits Rectangle {
+    in property <float> thickness: 10;
+    in property <float> inner-radius: 50 - root.thickness;
+    in-out property <float> value : 20%;
+    // in-out property <float> display-value : touch.pressed ? touch.new-value : root.value;
+    in-out property <float> display-value : root.value;
+    out property <angle> angle : -180deg + 180deg * root.display-value;
+    // in property <brush> coldGradient: @linear-gradient(0deg, #79b0f0 0%, #0011fd 50%, #79b0f0 100%);
+    // in property <brush> warmGradient: @linear-gradient(0deg, #f1b397 0%, #ff1100 50%, #f1b397 100%);
+    
+
+    width: 220px;
+    height: 120px;
+
+    Rectangle {
+        width: 200px;
+        height: 200px;
+        y: 5px;
+
+        pos := PieChartFill {
+            width: 200px;
+            height: 200px;
+            fill: #0011fd;
+            thickness: root.thickness;
+            inner-radius: root.inner-radius;
+            start: (root.display-value - 0.5) / 2;
+            progress: 0.25 - self.start;
+            
+
+        }
+        
+        neg := PieChartFill {
+            width: 200px;
+            height: 200px;
+            fill: #ff1100;
+            thickness: root.thickness;
+            inner-radius: root.inner-radius;
+            start: (root.display-value - 0.5) / 2;
+            progress: -0.25 - self.start;
+
+        
+
+        }
+
+        knob := Path {
+            width: 200px;
+            height: 200px;
+
+            fill: white;
+            stroke-width: 1px;
+            stroke: #929cb2;
+
+            viewbox-width: 100;
+            viewbox-height: 100;
+
+            MoveTo {
+                x: 50 + (50 + root.thickness / 4) * cos(root.angle);
+                y: 50 + (50 + root.thickness / 4) * sin(root.angle);
+            }
+
+            ArcTo {
+                radius-x: root.thickness / 4;
+                radius-y: root.thickness / 4;
+                x: 50 + (50 - root.thickness * 1.25) * cos(root.angle);
+                y: 50 + (50 - root.thickness * 1.25) * sin(root.angle);
+            }
+
+            ArcTo {
+                radius-x: root.thickness / 4;
+                radius-y: root.thickness / 4;
+                x: 50 + (50 + root.thickness * 0.25) * cos(root.angle);
+                y: 50 + (50 + root.thickness * 0.25) * sin(root.angle);
+            }
+
+            
+        }
+       knobImage := Image {
+            source: @image-url("../../image/aim-logo.png");
+            width: 24px;
+            height: 24px;
+
+            // Tính tỷ lệ từ viewbox sang pixel
+            property <float> scale_x: knob.width / 1px / knob.viewbox-width;
+            property <float> scale_y: knob.height / 1px / knob.viewbox-height;
+
+            // Tính vị trí ảnh theo quỹ đạo knob (chung quỹ đạo)
+            x: (50*1px + (50 - root.thickness / 2) * cos(root.angle)*1px) * scale_x - self.width / 2;
+            y: (50*1px + (50 - root.thickness / 2) * sin(root.angle)*1px) * scale_y - self.height / 2;
+        }
+
+
+        // touch := TouchArea {
+        //     property <float> new-value : min(1, max(0, self.mouse-x / self.height));
+
+        //     clicked => {
+        //         root.value = self.new-value;
+        //     }
+        // }
+    }
+
+
+    
+}
+export component SentimentIntensity inherits Box {
+    in property <string> in_title: "Độ sôi động";
+    in property <float> score: 0.8;
+    title: root.in_title;
+    in property <[string]> status_labels: ["Tiêu cực", "Trung lập", "Tích cực"];
+    // preferred-height: root.width;
+    // horizontal-stretch: 1;
+    width: 300px;
+    height: 200px;
+    background: Skin.palette.box;
+    
+    VerticalLayout  {
+        spacing: 0;
+
+        Rectangle {
+            vertical-stretch: 1;
+           
+            hor:= HorizontalLayout {
+                
+                leftLabel := Text {
+                  
+                    text: " 0 ";
+                    font-size: Skin.LargeFont;
+                    vertical-alignment: bottom;
+                    horizontal-alignment: center;
+                    y: -parent.height * 0.1;
+                    color: Skin.palette.text;
+                }
+
+                // ✅ Bọc Dimmer trong khung clip
+                clipContainer := Rectangle {
+                    // khung hiển thị
+                    horizontal-stretch: 1;
+                    vertical-stretch: 1;
+                    clip: true;
+
+                    dimmer := SentimentDimmer {                        
+                        value: root.score;                       
+                    }
+                }
+
+                rightLabel := Text {
+                    
+                    text: "100";
+                    font-size: Skin.LargeFont;
+                    vertical-alignment: bottom;
+                    horizontal-alignment: center;
+                    y: -parent.height * 0.1;
+                    color: Skin.palette.text;
+                }
+            }
+
+            centreLabel := Text {
+                width: clipContainer.width;
+                height: clipContainer.height;
+                x: clipContainer.x;
+                y: clipContainer.y;
+                color: Skin.palette.text;
+                text: "\{round(dimmer.display-value * 100)}";
+                font-size: Skin.HugeFont;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+
+            sentimentLabel := Text {
+                width: clipContainer.width;
+                height: 30px;
+                x: clipContainer.x;
+                y: clipContainer.y + clipContainer.height * 0.7;
+                font-size: Skin.LargeFont;
+                font-weight: 700;
+                stroke: Skin.palette.text;
+                stroke-style: outside;
+                stroke-width: 1px;
+                vertical-alignment: top;
+                horizontal-alignment: center;
+                text: {
+                    let val = dimmer.display-value * 100;
+                    if (val < 40) {
+                        status_labels[0];
+                    } else if (val <= 60) {
+                        status_labels[1];
+                    } else {
+                        status_labels[2];
+                    }
+                }
+                color: {
+                    let val = dimmer.display-value * 100;
+                    if (val < 40) {
+                        #ff1100;
+                    } else if (val <= 60) {
+                        #ffff00;
+                    } else {
+                        #081cff;
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+export component ListComboBox {
+
+    in-out property <int> current-index: 0;
+    in-out property <string> current_value: "A-Z";
+    property <bool> is_open: false;
+    in property <[string]> model: ["Price ↑", "Price ↓", "A-Z"];
+
+    // callback khi chọn item
+    callback on_selected(index: int, text: string);
+
+    width: 400px;
+    height: 36px;
+
+    // --- Nút chính (hiển thị item đang chọn) ---
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 5px;
+        border-width: 1px;
+        border-color: #26313f;
+        
+        
+        states [
+            pressed when touch-area-sort.pressed: {
+                background: #19191C.brighter(0.25);
+            }
+            hover when touch-area-sort.has-hover: {
+                background: #19191C.brighter(0.5);
+            }
+        ]
+        
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+
+            Text {
+                text: root.current-index >= 0 ? root.model[root.current-index] : "Chọn...";
+                color: #ffffff;
+                font-size: 14px;
+                vertical-alignment: center;
+                horizontal-alignment: left;
+            }
+            
+            Rectangle {} // Spacer
+            
+            VerticalLayout {
+                Rectangle {}
+                Image {
+                    width: 8px;
+                    height: 8px;
+                    source: !is_open ? @image-url("./../../image/up-arrow.svg") : @image-url("./../../image/down-arrow.svg");
+                    colorize: #ffffff;
+                }
+                Rectangle {}
+            }
+        }
+        
+        touch-area-sort := TouchArea {
+            clicked => {
+                is_open = !is_open;
+            }
+        }
+        
+        // Dropdown list
+        if is_open: Rectangle {
+            x: 0px;
+            y: -(model.length * 36px + 2px);
+            width: parent.width;
+            height: model.length * 36px;
+            background: #2a2a2a;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: #4a4a4a;
+            drop-shadow-blur: 8px;
+            drop-shadow-color: #00000060;
+            drop-shadow-offset-y: -2px;
+            clip: true;
+
+            
+            
+            VerticalLayout {
+                spacing: 0;
+                for item[i] in root.model: Rectangle {
+                    height: 36px;
+                    background: i == root.current-index ? #444 : #222;
+                    Text { text: item; color: white; x: 8px; y: 8px; font-size: 14px; }
+
+                    states [
+                        pressed when touch-area-item.pressed: {
+                            background: #0c0c0c.brighter(0.5);
+                        }
+                        hover when touch-area-item.has-hover: {
+                            background: #3d3d3d.brighter(0.25);
+                        }
+                    ]
+
+                    touch-area-item := TouchArea {
+                        clicked => {
+                            root.current-index = i;
+                            root.is_open = false;
+                            root.on_selected(i, item);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

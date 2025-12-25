@@ -1,0 +1,28 @@
+[package]
+name = "dashboard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+slint = { version = "1.13.1", default-features = false, features = ["backend-winit", "compat-1-2", "renderer-winit-femtovg"] }
+femtovg = "0.17.0"
+chrono = { version = "0.4.40", features = ["serde"] }
+plotters = "0.3.7"
+reqwest = { version = "0.12.5", features = ["blocking", "json"] }
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+log = "0.4.22"
+env_logger = "0.11.8"
+dirs-next = "2.0.0"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.9", features = ["winuser"] }
+
+[build-dependencies]
+slint-build = "1.13.1"
+winresource = "0.1.20"
+
+[package.metadata.winresource]
+OriginalFilename = "aim-trading-pro_0.1.2.exe"
+LegalCopyright = "AIM Copyright © 2025"
